@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="60 seconds"
+	debug="false">
+
+	<!-- 日志记录器级别 -->
+	<springProperty scope="context" name="consoleLevel" source="logging.console-level" defaultvalue="trace"/>
+	
+	<!-- 分包级别 -->
+	<springProperty scope="context" name="root" source="logging.level.root" value="info"/>
+	<springProperty scope="context" name="person.pluto" source="logging.level.person.pluto" value="trace"/>
+
+	<contextName>natcross2</contextName>
+
+	<appender name="consoleLog"
+		class="ch.qos.logback.core.ConsoleAppender">
+		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+			<level>${consoleLevel}</level>
+		</filter>
+		<layout class="ch.qos.logback.classic.PatternLayout">
+			<pattern>
+				<pattern>%d{HH:mm:ss.SSS} [%-10thread] [%-45logger{36}] [%-5level] [%-4line] - %msg%n</pattern>
+			</pattern>
+		</layout>
+	</appender>
+
+	<root level="${root}">
+		<appender-ref ref="consoleLog" />
+	</root>
+	
+	<logger level="${person.pluto}" name="person.pluto"/>
+	
+</configuration>

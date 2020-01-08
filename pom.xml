@@ -80,10 +80,13 @@
 
 	<profiles>
 		<profile>
-			<id>install</id>
+			<id>compile</id>
 			<activation>
 				<activeByDefault>true</activeByDefault>
 			</activation>
+		</profile>
+		<profile>
+			<id>install</id>
 			<build>
 				<resources>
 					<resource>
@@ -117,7 +120,7 @@
 									<transformers>
 										<transformer
 											implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-											<mainClass>person.pluto.natcross.ServerApp</mainClass>
+											<mainClass>person.pluto.natcross2.ServerApp</mainClass>
 										</transformer>
 									</transformers>
 								</configuration>
@@ -148,7 +151,7 @@
 									<transformers>
 										<transformer
 											implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-											<mainClass>person.pluto.natcross.ClientApp</mainClass>
+											<mainClass>person.pluto.natcross2.ClientApp</mainClass>
 										</transformer>
 									</transformers>
 								</configuration>

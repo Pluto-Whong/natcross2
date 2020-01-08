@@ -13,6 +13,13 @@ public class ClientApp {
         secretAll();
     }
 
+    /**
+     * 交互、隧道都进行加密
+     * 
+     * @author Pluto
+     * @since 2020-01-08 17:29:54
+     * @throws Exception
+     */
     public static void secretAll() throws Exception {
         AllSecretInteractiveClientConfig config = new AllSecretInteractiveClientConfig();
 
@@ -29,6 +36,13 @@ public class ClientApp {
         new ClientControlThread(config).createControl();
     }
 
+    /**
+     * 交互加密，即交互验证
+     * 
+     * @author Pluto
+     * @since 2020-01-08 17:30:13
+     * @throws Exception
+     */
     public static void secret() throws Exception {
         SecretInteractiveClientConfig config = new SecretInteractiveClientConfig();
 
@@ -44,6 +58,13 @@ public class ClientApp {
         new ClientControlThread(config).createControl();
     }
 
+    /**
+     * 无加密、无验证
+     * 
+     * @author Pluto
+     * @since 2020-01-08 17:30:22
+     * @throws Exception
+     */
     public static void simple() throws Exception {
         InteractiveClientConfig config = new InteractiveClientConfig();
 

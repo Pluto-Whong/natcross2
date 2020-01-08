@@ -25,6 +25,13 @@ public class ServerApp {
         secretAll();
     }
 
+    /**
+     * 交互、隧道都进行加密
+     * 
+     * @author Pluto
+     * @since 2020-01-08 17:29:26
+     * @throws Exception
+     */
     public static void secretAll() throws Exception {
         SecretSimpleClientServiceConfig config = new SecretSimpleClientServiceConfig(10010);
         config.setBaseAesKey(aesKey);
@@ -51,10 +58,18 @@ public class ServerApp {
         AllSecretSimpleListenServerConfig listengConfig = new AllSecretSimpleListenServerConfig(8081);
         listengConfig.setBaseAesKey(aesKey);
         listengConfig.setTokenKey(tokenKey);
+        // 隧道和交互的密钥使用同一个
         listengConfig.setBasePasswayKey(aesKey);
         ListenServerControl.createNewListenServer(listengConfig);
     }
 
+    /**
+     * 交互加密，即交互验证
+     * 
+     * @author Pluto
+     * @since 2020-01-08 17:28:54
+     * @throws Exception
+     */
     public static void secret() throws Exception {
         SecretSimpleClientServiceConfig config = new SecretSimpleClientServiceConfig(10010);
         config.setBaseAesKey(aesKey);
@@ -84,6 +99,13 @@ public class ServerApp {
         ListenServerControl.createNewListenServer(listengConfig);
     }
 
+    /**
+     * 无加密、无验证
+     * 
+     * @author Pluto
+     * @since 2020-01-08 17:29:02
+     * @throws Exception
+     */
     public static void simple() throws Exception {
         SimpleClientServiceConfig config = new SimpleClientServiceConfig(10010);
 
