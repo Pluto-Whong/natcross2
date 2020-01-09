@@ -40,6 +40,13 @@ public class SimpleClientServiceConfig implements IClientServiceConfig<Interacti
         return Executors.newCachedThreadPool();
     }
 
+    /**
+     * 设置适配器
+     * 
+     * @author Pluto
+     * @since 2020-01-09 16:19:16
+     * @param clientServiceAdapter
+     */
     public void setClientServiceAdapter(IClientServiceAdapter clientServiceAdapter) {
         this.clientServiceAdapter = clientServiceAdapter;
     }
