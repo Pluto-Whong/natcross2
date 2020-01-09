@@ -11,7 +11,6 @@ import javax.net.ssl.SSLServerSocketFactory;
 import org.apache.commons.lang3.StringUtils;
 
 import person.pluto.natcross2.serverside.client.ClientServiceThread;
-import person.pluto.natcross2.serverside.client.adapter.DefaultReadAheadPassValueAdapter;
 import person.pluto.natcross2.serverside.client.config.SecretSimpleClientServiceConfig;
 import person.pluto.natcross2.serverside.client.config.SimpleClientServiceConfig;
 import person.pluto.natcross2.serverside.listen.ListenServerControl;
@@ -90,8 +89,6 @@ public class ServerApp {
         // 设置交互aes密钥和签名密钥
         config.setBaseAesKey(aesKey);
         config.setTokenKey(tokenKey);
-        // 设置适配器
-        config.setClientServiceAdapter(new DefaultReadAheadPassValueAdapter(config));
         new ClientServiceThread(config).start();
 
         AllSecretSimpleListenServerConfig listengConfig = new AllSecretSimpleListenServerConfig(listengPort);
@@ -117,8 +114,6 @@ public class ServerApp {
         // 设置交互aes密钥和签名密钥
         config.setBaseAesKey(aesKey);
         config.setTokenKey(tokenKey);
-        // 设置适配器
-        config.setClientServiceAdapter(new DefaultReadAheadPassValueAdapter(config));
         new ClientServiceThread(config).start();
 
         // 设置并启动一个穿透端口
@@ -140,8 +135,6 @@ public class ServerApp {
     public static void simple() throws Exception {
         // 设置并启动客户端服务线程
         SimpleClientServiceConfig config = new SimpleClientServiceConfig(servicePort);
-        // 设置适配器
-        config.setClientServiceAdapter(new DefaultReadAheadPassValueAdapter(config));
         new ClientServiceThread(config).start();
 
         // 设置并启动一个穿透端口

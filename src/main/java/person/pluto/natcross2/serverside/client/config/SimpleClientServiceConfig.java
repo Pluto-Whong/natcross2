@@ -9,6 +9,7 @@ import java.util.concurrent.Executors;
 import person.pluto.natcross2.channel.InteractiveChannel;
 import person.pluto.natcross2.channel.SocketChannel;
 import person.pluto.natcross2.model.InteractiveModel;
+import person.pluto.natcross2.serverside.client.adapter.DefaultReadAheadPassValueAdapter;
 import person.pluto.natcross2.serverside.client.adapter.IClientServiceAdapter;
 
 /**
@@ -23,7 +24,7 @@ import person.pluto.natcross2.serverside.client.adapter.IClientServiceAdapter;
 public class SimpleClientServiceConfig implements IClientServiceConfig<InteractiveModel, InteractiveModel> {
 
     private final Integer listenPort;
-    private IClientServiceAdapter clientServiceAdapter;
+    private IClientServiceAdapter clientServiceAdapter = new DefaultReadAheadPassValueAdapter(this);
     private Charset charset = StandardCharsets.UTF_8;
 
     public SimpleClientServiceConfig(Integer listenPort) {
