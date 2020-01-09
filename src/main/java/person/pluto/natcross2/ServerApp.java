@@ -39,9 +39,9 @@ public class ServerApp {
     public static final int listengPort = 8081;
 
     // 交互密钥 AES
-    public static String aesKey = "0PMudFSqJ9WsQrTC60sva9sJAV4PF5iOBjKZW17NeF4=";
+    public static final String aesKey = "0PMudFSqJ9WsQrTC60sva9sJAV4PF5iOBjKZW17NeF4=";
     // 交互签名key
-    public static String tokenKey = "tokenKey";
+    public static final String tokenKey = "tokenKey";
 
     // 你的p12格式的证书路径
     private static String sslKeyStorePath = System.getenv("sslKeyStorePath");
