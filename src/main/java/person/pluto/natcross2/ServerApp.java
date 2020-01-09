@@ -8,6 +8,8 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocketFactory;
 
+import org.apache.commons.lang3.StringUtils;
+
 import person.pluto.natcross2.model.InteractiveModel;
 import person.pluto.natcross2.serverside.client.ClientServiceThread;
 import person.pluto.natcross2.serverside.client.adapter.ReadAheadPassValueAdapter;
@@ -22,40 +24,43 @@ import person.pluto.natcross2.serverside.listen.serversocket.ICreateServerSocket
 import person.pluto.natcross2.serverside.listen.config.AllSecretSimpleListenServerConfig;
 import person.pluto.natcross2.serverside.listen.config.SecretSimpleListenServerConfig;
 
-@SuppressWarnings("unused")
 public class ServerApp {
 
     public static String aesKey = "0PMudFSqJ9WsQrTC60sva9sJAV4PF5iOBjKZW17NeF4=";
     public static String tokenKey = "tokenKey";
 
-    private static String sslKeyStorePath = "你的p12格式的证书路径";
-    private static String sslKeyStorePassword = "你的证书密码";
+    // 你的p12格式的证书路径
+    private static String sslKeyStorePath = System.getenv("sslKeyStorePath");
+    // 你的证书密码
+    private static String sslKeyStorePassword = System.getenv("sslKeyStorePassword");
 
     public static ICreateServerSocket createServerSocket;
 
     public static void main(String[] args) throws Exception {
 
-        // 如果需要HTTPS协议的支持，则开启这个，并正确填写你的证书信息
-//        createServerSocket = new ICreateServerSocket() {
-//            @Override
-//            public ServerSocket createServerSocket(int listenPort) throws Exception {
-//                KeyStore kstore = KeyStore.getInstance("PKCS12");
-//                kstore.load(new FileInputStream(sslKeyStorePath), sslKeyStorePassword.toCharArray());
-//                KeyManagerFactory keyFactory = KeyManagerFactory.getInstance("sunx509");
-//                keyFactory.init(kstore, sslKeyStorePassword.toCharArray());
-//
-//                SSLContext ctx = SSLContext.getInstance("TLSv1.2");
-//                ctx.init(keyFactory.getKeyManagers(), null, null);
-//
-//                SSLServerSocketFactory serverSocketFactory = ctx.getServerSocketFactory();
-//
-//                return serverSocketFactory.createServerSocket(listenPort);
-//            }
-//        };
+        // 如果需要HTTPS协议的支持，则填写sslKeyStorePath、sslKeyStorePassword或在环境变量中定义
+        if (StringUtils.isNoneBlank(sslKeyStorePath, sslKeyStorePassword)) {
+            createServerSocket = new ICreateServerSocket() {
+                @Override
+                public ServerSocket createServerSocket(int listenPort) throws Exception {
+                    KeyStore kstore = KeyStore.getInstance("PKCS12");
+                    kstore.load(new FileInputStream(sslKeyStorePath), sslKeyStorePassword.toCharArray());
+                    KeyManagerFactory keyFactory = KeyManagerFactory.getInstance("sunx509");
+                    keyFactory.init(kstore, sslKeyStorePassword.toCharArray());
+
+                    SSLContext ctx = SSLContext.getInstance("TLSv1.2");
+                    ctx.init(keyFactory.getKeyManagers(), null, null);
+
+                    SSLServerSocketFactory serverSocketFactory = ctx.getServerSocketFactory();
+
+                    return serverSocketFactory.createServerSocket(listenPort);
+                }
+            };
+        }
 
 //        simple();
-//        secret();
-        secretAll();
+        secret();
+//        secretAll();
     }
 
     /**

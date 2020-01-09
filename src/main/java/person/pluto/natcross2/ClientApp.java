@@ -9,8 +9,8 @@ public class ClientApp {
 
     public static void main(String[] args) throws Exception {
 //        simple();
-//        secret();
-        secretAll();
+        secret();
+//        secretAll();
     }
 
     /**
