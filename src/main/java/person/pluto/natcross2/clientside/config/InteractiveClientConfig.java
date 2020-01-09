@@ -37,6 +37,7 @@ public class InteractiveClientConfig implements IClientConfig<InteractiveModel, 
     private Integer destPort;
 
     private Charset charset = StandardCharsets.UTF_8;
+    private int streamCacheSize = 8196;
 
     @Override
     public void setDestIpPort(String destIp, Integer destPort) {
@@ -75,7 +76,9 @@ public class InteractiveClientConfig implements IClientConfig<InteractiveModel, 
 
     @Override
     public AbsSocketPart newSocketPart(ClientControlThread clientControlThread) {
-        return new SimpleSocketPart(clientControlThread);
+        SimpleSocketPart simpleSocketPart = new SimpleSocketPart(clientControlThread);
+        simpleSocketPart.setStreamCacheSize(this.getStreamCacheSize());
+        return simpleSocketPart;
     }
 
 }

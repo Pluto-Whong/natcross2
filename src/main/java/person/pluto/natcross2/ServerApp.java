@@ -1,5 +1,13 @@
 package person.pluto.natcross2;
 
+import java.io.FileInputStream;
+import java.net.ServerSocket;
+import java.security.KeyStore;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocketFactory;
+
 import person.pluto.natcross2.model.InteractiveModel;
 import person.pluto.natcross2.serverside.client.ClientServiceThread;
 import person.pluto.natcross2.serverside.client.adapter.ReadAheadPassValueAdapter;
@@ -10,16 +18,41 @@ import person.pluto.natcross2.serverside.client.process.ClientConnectProcess;
 import person.pluto.natcross2.serverside.client.process.ClientControlProcess;
 import person.pluto.natcross2.serverside.listen.ListenServerControl;
 import person.pluto.natcross2.serverside.listen.config.SimpleListenServerConfig;
+import person.pluto.natcross2.serverside.listen.serversocket.ICreateServerSocket;
 import person.pluto.natcross2.serverside.listen.config.AllSecretSimpleListenServerConfig;
-import person.pluto.natcross2.serverside.listen.config.IListenServerConfig;
 import person.pluto.natcross2.serverside.listen.config.SecretSimpleListenServerConfig;
 
+@SuppressWarnings("unused")
 public class ServerApp {
 
     public static String aesKey = "0PMudFSqJ9WsQrTC60sva9sJAV4PF5iOBjKZW17NeF4=";
     public static String tokenKey = "tokenKey";
 
+    private static String sslKeyStorePath = "你的p12格式的证书路径";
+    private static String sslKeyStorePassword = "你的证书密码";
+
+    public static ICreateServerSocket createServerSocket;
+
     public static void main(String[] args) throws Exception {
+
+        // 如果需要HTTPS协议的支持，则开启这个，并正确填写你的证书信息
+//        createServerSocket = new ICreateServerSocket() {
+//            @Override
+//            public ServerSocket createServerSocket(int listenPort) throws Exception {
+//                KeyStore kstore = KeyStore.getInstance("PKCS12");
+//                kstore.load(new FileInputStream(sslKeyStorePath), sslKeyStorePassword.toCharArray());
+//                KeyManagerFactory keyFactory = KeyManagerFactory.getInstance("sunx509");
+//                keyFactory.init(kstore, sslKeyStorePassword.toCharArray());
+//
+//                SSLContext ctx = SSLContext.getInstance("TLSv1.2");
+//                ctx.init(keyFactory.getKeyManagers(), null, null);
+//
+//                SSLServerSocketFactory serverSocketFactory = ctx.getServerSocketFactory();
+//
+//                return serverSocketFactory.createServerSocket(listenPort);
+//            }
+//        };
+
 //        simple();
 //        secret();
         secretAll();
@@ -60,6 +93,9 @@ public class ServerApp {
         listengConfig.setTokenKey(tokenKey);
         // 隧道和交互的密钥使用同一个
         listengConfig.setBasePasswayKey(aesKey);
+
+        listengConfig.setCreateServerSocket(createServerSocket);
+
         ListenServerControl.createNewListenServer(listengConfig);
     }
 
@@ -96,6 +132,9 @@ public class ServerApp {
         SecretSimpleListenServerConfig listengConfig = new SecretSimpleListenServerConfig(8081);
         listengConfig.setBaseAesKey(aesKey);
         listengConfig.setTokenKey(tokenKey);
+
+        listengConfig.setCreateServerSocket(createServerSocket);
+
         ListenServerControl.createNewListenServer(listengConfig);
     }
 
@@ -127,7 +166,10 @@ public class ServerApp {
 
         clientServiceThread.start();
 
-        IListenServerConfig listengConfig = new SimpleListenServerConfig(8081);
+        SimpleListenServerConfig listengConfig = new SimpleListenServerConfig(8081);
+
+        listengConfig.setCreateServerSocket(createServerSocket);
+
         ListenServerControl.createNewListenServer(listengConfig);
     }
 

@@ -1,6 +1,5 @@
 package person.pluto.natcross2.serverside.listen;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -120,7 +119,7 @@ public class ListenServerControl {
         ServerListenThread serverListenThread = null;
         try {
             serverListenThread = new ServerListenThread(config);
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.warn("create listen server [{}] faild", config.getListenPort());
             return null;
         }

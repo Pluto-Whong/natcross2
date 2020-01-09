@@ -1,11 +1,14 @@
 package person.pluto.natcross2.serverside.listen.config;
 
 import java.io.IOException;
+import java.net.ServerSocket;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import com.alibaba.fastjson.JSONObject;
 
+import lombok.AccessLevel;
+import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -18,6 +21,7 @@ import person.pluto.natcross2.serverside.listen.clear.ClearInvalidSocketPartThre
 import person.pluto.natcross2.serverside.listen.clear.IClearInvalidSocketPartThread;
 import person.pluto.natcross2.serverside.listen.control.ControlSocket;
 import person.pluto.natcross2.serverside.listen.control.IControlSocket;
+import person.pluto.natcross2.serverside.listen.serversocket.ICreateServerSocket;
 
 /**
  * <p>
@@ -27,27 +31,34 @@ import person.pluto.natcross2.serverside.listen.control.IControlSocket;
  * @author Pluto
  * @since 2020-01-08 16:53:17
  */
+@Data
 @NoArgsConstructor
 public class SimpleListenServerConfig implements IListenServerConfig {
 
+    @Getter
+    @Setter(AccessLevel.NONE)
     private Integer listenPort;
 
-    @Setter
-    @Getter
     private Long invaildMillis = 60000L;
-    @Setter
-    @Getter
     private Long clearInterval = 10L;
 
     private Charset charset = StandardCharsets.UTF_8;
+
+    private ICreateServerSocket createServerSocket;
+
+    private int streamCacheSize = 8196;
 
     public SimpleListenServerConfig(Integer listenPort) {
         this.listenPort = listenPort;
     }
 
     @Override
-    public Integer getListenPort() {
-        return this.listenPort;
+    public ServerSocket createServerSocket() throws Exception {
+        if (createServerSocket == null) {
+            return new ServerSocket(this.getListenPort());
+        } else {
+            return createServerSocket.createServerSocket(this.getListenPort());
+        }
     }
 
     @Override
@@ -73,23 +84,8 @@ public class SimpleListenServerConfig implements IListenServerConfig {
     public AbsSocketPart newSocketPart(ServerListenThread serverListenThread) {
         SimpleSocketPart socketPart = new SimpleSocketPart(serverListenThread);
         socketPart.setInvaildMillis(this.getInvaildMillis());
+        socketPart.setStreamCacheSize(this.getStreamCacheSize());
         return socketPart;
-    }
-
-    @Override
-    public Charset getCharset() {
-        return this.charset;
-    }
-
-    /**
-     * 设置字符集
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:53:53
-     * @param charset
-     */
-    public void setCharset(Charset charset) {
-        this.charset = charset;
     }
 
 }

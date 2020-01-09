@@ -1,5 +1,6 @@
 package person.pluto.natcross2.serverside.listen.config;
 
+import java.net.ServerSocket;
 import java.nio.charset.Charset;
 
 import com.alibaba.fastjson.JSONObject;
@@ -69,4 +70,16 @@ public interface IListenServerConfig {
      * @return
      */
     IControlSocket newControlSocket(SocketChannel<?, ?> socketChannel, JSONObject config);
+
+    /**
+     * 创建监听端口
+     * 
+     * @author wangmin1994@qq.com
+     * @since 2020-01-09 13:24:13
+     * @return
+     * @throws Exception
+     */
+    default public ServerSocket createServerSocket() throws Exception {
+        return new ServerSocket(this.getListenPort());
+    }
 }

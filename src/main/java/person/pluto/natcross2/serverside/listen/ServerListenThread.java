@@ -1,6 +1,5 @@
 package person.pluto.natcross2.serverside.listen;
 
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
@@ -40,11 +39,12 @@ public final class ServerListenThread implements Runnable, IBelongControl {
     private IControlSocket controlSocket;
     private IClearInvalidSocketPartThread clearInvalidSocketPartThread;
 
-    public ServerListenThread(IListenServerConfig config) throws IOException {
+    public ServerListenThread(IListenServerConfig config) throws Exception {
         this.config = config;
 
         // 此处就开始占用端口，防止重复占用端口，和启动时已被占用
-        listenServerSocket = new ServerSocket(this.getListenPort());
+        listenServerSocket = this.config.createServerSocket();
+
         log.info("server listen port[{}] is created!", this.getListenPort());
     }
 
