@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import lombok.NoArgsConstructor;
 import person.pluto.natcross2.channel.InteractiveChannel;
 import person.pluto.natcross2.channel.SocketChannel;
 import person.pluto.natcross2.model.InteractiveModel;
@@ -21,13 +22,18 @@ import person.pluto.natcross2.serverside.client.adapter.IClientServiceAdapter;
  * @author Pluto
  * @since 2020-01-08 16:45:47
  */
+@NoArgsConstructor
 public class SimpleClientServiceConfig implements IClientServiceConfig<InteractiveModel, InteractiveModel> {
 
-    private final Integer listenPort;
+    private Integer listenPort;
     private IClientServiceAdapter clientServiceAdapter = new DefaultReadAheadPassValueAdapter(this);
     private Charset charset = StandardCharsets.UTF_8;
 
     public SimpleClientServiceConfig(Integer listenPort) {
+        this.listenPort = listenPort;
+    }
+
+    public void setListenPort(int listenPort) {
         this.listenPort = listenPort;
     }
 

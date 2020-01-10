@@ -5,6 +5,7 @@ import java.security.Key;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import person.pluto.natcross2.channel.SecretInteractiveChannel;
 import person.pluto.natcross2.channel.SocketChannel;
 import person.pluto.natcross2.model.InteractiveModel;
@@ -20,6 +21,7 @@ import person.pluto.natcross2.utils.AESUtil;
  * @since 2020-01-08 16:44:42
  */
 @Data
+@NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 public class SecretSimpleClientServiceConfig extends SimpleClientServiceConfig {
 

@@ -7,11 +7,8 @@ import java.nio.charset.StandardCharsets;
 
 import com.alibaba.fastjson.JSONObject;
 
-import lombok.AccessLevel;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import person.pluto.natcross2.api.socketpart.AbsSocketPart;
 import person.pluto.natcross2.api.socketpart.SimpleSocketPart;
 import person.pluto.natcross2.channel.InteractiveChannel;
@@ -35,8 +32,6 @@ import person.pluto.natcross2.serverside.listen.serversocket.ICreateServerSocket
 @NoArgsConstructor
 public class SimpleListenServerConfig implements IListenServerConfig {
 
-    @Getter
-    @Setter(AccessLevel.NONE)
     private Integer listenPort;
 
     private Long invaildMillis = 60000L;

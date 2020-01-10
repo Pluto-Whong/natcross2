@@ -44,4 +44,17 @@ public final class PasswayControl {
         PasswayControl.passwayExecutorService = executorService;
     }
 
+    /**
+     * 立即关闭
+     * 
+     * @author Pluto
+     * @since 2020-01-10 09:46:08
+     */
+    public static void closeNow() {
+        if (PasswayControl.passwayExecutorService != null) {
+            PasswayControl.passwayExecutorService.shutdownNow();
+        }
+        PasswayControl.passwayExecutorService = null;
+    }
+
 }
