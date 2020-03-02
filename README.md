@@ -31,25 +31,27 @@ mvn clean compile package -PclientApp
 
 ## 参数解释
 ServerApp：
-字段|解释
-:-:|:-
-serviceIp|公网服务器的IP
-servicePort|服务端的控制端口，主要用来与客户端进行指令交互
-listenPort|服务端的监听端口，也就是部署完成后，在外网访问 serviceIp:listenPort 的方式对内网应用进行访问
-aesKey|交互密钥key，保证数据的秘密性，可以查看 SecretInteractiveModel.java 中的fullMessage和checkAutograph中确认密钥的使用方式。<br>如果你使用了secretAll方式进行部署，这个key还是数据加密的key，可以在 SecretPassway.java 中确认密钥的使用方式
-tokenKey|交互签名key，签名同aesKey|
-sslKeyStorePath|ssl证书的路径，默认方法只支持pkcs12的证书格式，使用这个证书可以做到https协议转http协议
-sslKeyStorePassword|证书密码
-createServerSocket|创建socket的方式，主要针对普通socket和sslSocket的方式进行封装，结合ssl证书使用
+
+|字段|解释|
+|:-:|:-|
+|serviceIp|公网服务器的IP|
+|servicePort|服务端的控制端口，主要用来与客户端进行指令交互|
+|listenPort|服务端的监听端口，也就是部署完成后，在外网访问 serviceIp:listenPort 的方式对内网应用进行访问|
+|aesKey|交互密钥key，保证数据的秘密性，可以查看 SecretInteractiveModel.java 中的fullMessage和checkAutograph中确认密钥的使用方式。<br>如果你使用了secretAll方式进行部署，这个key还是数据加密的key，可以在 SecretPassway.java 中确认密钥的使用方式|
+|tokenKey|交互签名key，签名同aesKey|
+|sslKeyStorePath|ssl证书的路径，默认方法只支持pkcs12的证书格式，使用这个证书可以做到https协议转http协议|
+|sslKeyStorePassword|证书密码|
+|createServerSocket|创建socket的方式，主要针对普通socket和sslSocket的方式进行封装，结合ssl证书使用|
 
 ClientApp:
-字段|解释
-:-:|:-
-destIp|要开放到公网的内网应用所在机器的IP
-destPort|要开放到公网的内网应用的端口
-serviceIp|复用ServerApp的字段，所以要保证部署包和内网包的参数一致
-servicePort|复用ServerApp的字段，所以要保证部署包和内网包的参数一致
-listenPort|复用ServerApp的字段，所以要保证部署包和内网包的参数一致
-aesKey|复用ServerApp的字段，所以要保证部署包和内网包的参数一致
-tokenKey|复用ServerApp的字段，所以要保证部署包和内网包的参数一致
+
+|字段|解释|
+|:-:|:-|
+|destIp|要开放到公网的内网应用所在机器的IP|
+|destPort|要开放到公网的内网应用的端口|
+|serviceIp|复用ServerApp的字段，所以要保证部署包和内网包的参数一致|
+|servicePort|复用ServerApp的字段，所以要保证部署包和内网包的参数一致|
+|listenPort|复用ServerApp的字段，所以要保证部署包和内网包的参数一致|
+|aesKey|复用ServerApp的字段，所以要保证部署包和内网包的参数一致|
+|tokenKey|复用ServerApp的字段，所以要保证部署包和内网包的参数一致|
 
