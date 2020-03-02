@@ -41,7 +41,7 @@ public class ClientApp {
         config.setClientServiceIp(ServerApp.serviceIp);
         config.setClientServicePort(ServerApp.servicePort);
         // 设置对外暴露的端口，该端口的启动在服务端，这里只是表明要跟服务端的那个监听服务对接
-        config.setListenServerPort(ServerApp.listengPort);
+        config.setListenServerPort(ServerApp.listenPort);
         // 设置要暴露的目标IP和端口
         config.setDestIp(destIp);
         config.setDestPort(destPort);
@@ -69,7 +69,7 @@ public class ClientApp {
         config.setClientServiceIp(ServerApp.serviceIp);
         config.setClientServicePort(ServerApp.servicePort);
         // 设置对外暴露的端口，该端口的启动在服务端，这里只是表明要跟服务端的那个监听服务对接
-        config.setListenServerPort(ServerApp.listengPort);
+        config.setListenServerPort(ServerApp.listenPort);
         // 设置要暴露的目标IP和端口
         config.setDestIp(destIp);
         config.setDestPort(destPort);
@@ -95,7 +95,7 @@ public class ClientApp {
         config.setClientServiceIp(ServerApp.serviceIp);
         config.setClientServicePort(ServerApp.servicePort);
         // 设置对外暴露的端口，该端口的启动在服务端，这里只是表明要跟服务端的那个监听服务对接
-        config.setListenServerPort(ServerApp.listengPort);
+        config.setListenServerPort(ServerApp.listenPort);
         // 设置要暴露的目标IP和端口
         config.setDestIp(destIp);
         config.setDestPort(destPort);

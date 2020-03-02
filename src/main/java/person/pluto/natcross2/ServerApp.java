@@ -35,7 +35,7 @@ public class ServerApp {
     // 客户端服务的端口
     public static final int servicePort = 10010;
     // 服务端监听的端口，外网访问服务端IP:listengPort即可进行穿透
-    public static final int listengPort = 8081;
+    public static final int listenPort = 8081;
 
     // 交互密钥 AES
     public static final String aesKey = "0PMudFSqJ9WsQrTC60sva9sJAV4PF5iOBjKZW17NeF4=";
@@ -91,7 +91,7 @@ public class ServerApp {
         config.setTokenKey(tokenKey);
         new ClientServiceThread(config).start();
 
-        AllSecretSimpleListenServerConfig listengConfig = new AllSecretSimpleListenServerConfig(listengPort);
+        AllSecretSimpleListenServerConfig listengConfig = new AllSecretSimpleListenServerConfig(listenPort);
         // 设置交互aes密钥和签名密钥，这里使用和客户端服务相同的密钥，可以根据需要设置不同的
         listengConfig.setBaseAesKey(aesKey);
         listengConfig.setTokenKey(tokenKey);
@@ -117,7 +117,7 @@ public class ServerApp {
         new ClientServiceThread(config).start();
 
         // 设置并启动一个穿透端口
-        SecretSimpleListenServerConfig listengConfig = new SecretSimpleListenServerConfig(listengPort);
+        SecretSimpleListenServerConfig listengConfig = new SecretSimpleListenServerConfig(listenPort);
         // 设置交互aes密钥和签名密钥，这里使用和客户端服务相同的密钥，可以根据需要设置不同的
         listengConfig.setBaseAesKey(aesKey);
         listengConfig.setTokenKey(tokenKey);
@@ -138,7 +138,7 @@ public class ServerApp {
         new ClientServiceThread(config).start();
 
         // 设置并启动一个穿透端口
-        SimpleListenServerConfig listengConfig = new SimpleListenServerConfig(listengPort);
+        SimpleListenServerConfig listengConfig = new SimpleListenServerConfig(listenPort);
         listengConfig.setCreateServerSocket(createServerSocket);
         ListenServerControl.createNewListenServer(listengConfig);
     }
