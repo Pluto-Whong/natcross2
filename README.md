@@ -55,3 +55,7 @@ ClientApp:
 |aesKey|复用ServerApp的字段，所以要保证部署包和内网包的参数一致|
 |tokenKey|复用ServerApp的字段，所以要保证部署包和内网包的参数一致|
 
+## 内网穿透思路
+
+因NAT网内CLIENT可以正常连接到SERVER端，并且能够保持一段时间的长连接，则由CLIENT发起连接，建立SOCKET对，在SERVER收到外部请求时，可以通过已经建立好的SOCKET将数据传输给CLIENT，CLIENT使用相同的方式将数据发送给指定的网络程序，网络程序回发数据后则按原路返回给请求方。
+![时序图](./doc/sequence.svg)
