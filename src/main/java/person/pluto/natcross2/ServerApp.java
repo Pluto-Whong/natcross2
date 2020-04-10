@@ -10,6 +10,7 @@ import javax.net.ssl.SSLServerSocketFactory;
 
 import org.apache.commons.lang3.StringUtils;
 
+import person.pluto.natcross2.CommonConstants.ListenDest;
 import person.pluto.natcross2.serverside.client.ClientServiceThread;
 import person.pluto.natcross2.serverside.client.config.SecretSimpleClientServiceConfig;
 import person.pluto.natcross2.serverside.client.config.SimpleClientServiceConfig;
@@ -29,18 +30,6 @@ import person.pluto.natcross2.serverside.listen.config.SecretSimpleListenServerC
  * @since 2020-01-09 16:27:03
  */
 public class ServerApp {
-
-    // 服务端地址，支持IP或域名，这个根据服务端放的网络位置进行设置
-    public static final String serviceIp = "127.0.0.1";
-    // 客户端服务的端口
-    public static final int servicePort = 10010;
-    // 服务端监听的端口，外网访问服务端IP:listengPort即可进行穿透
-    public static final int listenPort = 8081;
-
-    // 交互密钥 AES
-    public static final String aesKey = "0PMudFSqJ9WsQrTC60sva9sJAV4PF5iOBjKZW17NeF4=";
-    // 交互签名key
-    public static final String tokenKey = "tokenKey";
 
     // 你的p12格式的证书路径
     private static String sslKeyStorePath = System.getenv("sslKeyStorePath");
@@ -70,6 +59,7 @@ public class ServerApp {
                 }
             };
         }
+        createServerSocket = null;
 
 //        simple();
         secret();
@@ -85,20 +75,22 @@ public class ServerApp {
      */
     public static void secretAll() throws Exception {
         // 设置并启动客户端服务线程
-        SecretSimpleClientServiceConfig config = new SecretSimpleClientServiceConfig(servicePort);
+        SecretSimpleClientServiceConfig config = new SecretSimpleClientServiceConfig(CommonConstants.servicePort);
         // 设置交互aes密钥和签名密钥
-        config.setBaseAesKey(aesKey);
-        config.setTokenKey(tokenKey);
+        config.setBaseAesKey(CommonConstants.aesKey);
+        config.setTokenKey(CommonConstants.tokenKey);
         new ClientServiceThread(config).start();
 
-        AllSecretSimpleListenServerConfig listengConfig = new AllSecretSimpleListenServerConfig(listenPort);
-        // 设置交互aes密钥和签名密钥，这里使用和客户端服务相同的密钥，可以根据需要设置不同的
-        listengConfig.setBaseAesKey(aesKey);
-        listengConfig.setTokenKey(tokenKey);
-        // 设置隧道密钥
-        listengConfig.setBasePasswayKey(aesKey);
-        listengConfig.setCreateServerSocket(createServerSocket);
-        ListenServerControl.createNewListenServer(listengConfig);
+        for (ListenDest model : CommonConstants.listenDestArray) {
+            AllSecretSimpleListenServerConfig listengConfig = new AllSecretSimpleListenServerConfig(model.listenPort);
+            // 设置交互aes密钥和签名密钥，这里使用和客户端服务相同的密钥，可以根据需要设置不同的
+            listengConfig.setBaseAesKey(CommonConstants.aesKey);
+            listengConfig.setTokenKey(CommonConstants.tokenKey);
+            // 设置隧道密钥
+            listengConfig.setBasePasswayKey(CommonConstants.aesKey);
+            listengConfig.setCreateServerSocket(createServerSocket);
+            ListenServerControl.createNewListenServer(listengConfig);
+        }
     }
 
     /**
@@ -110,19 +102,21 @@ public class ServerApp {
      */
     public static void secret() throws Exception {
         // 设置并启动客户端服务线程
-        SecretSimpleClientServiceConfig config = new SecretSimpleClientServiceConfig(servicePort);
+        SecretSimpleClientServiceConfig config = new SecretSimpleClientServiceConfig(CommonConstants.servicePort);
         // 设置交互aes密钥和签名密钥
-        config.setBaseAesKey(aesKey);
-        config.setTokenKey(tokenKey);
+        config.setBaseAesKey(CommonConstants.aesKey);
+        config.setTokenKey(CommonConstants.tokenKey);
         new ClientServiceThread(config).start();
 
-        // 设置并启动一个穿透端口
-        SecretSimpleListenServerConfig listengConfig = new SecretSimpleListenServerConfig(listenPort);
-        // 设置交互aes密钥和签名密钥，这里使用和客户端服务相同的密钥，可以根据需要设置不同的
-        listengConfig.setBaseAesKey(aesKey);
-        listengConfig.setTokenKey(tokenKey);
-        listengConfig.setCreateServerSocket(createServerSocket);
-        ListenServerControl.createNewListenServer(listengConfig);
+        for (ListenDest model : CommonConstants.listenDestArray) {
+            // 设置并启动一个穿透端口
+            SecretSimpleListenServerConfig listengConfig = new SecretSimpleListenServerConfig(model.listenPort);
+            // 设置交互aes密钥和签名密钥，这里使用和客户端服务相同的密钥，可以根据需要设置不同的
+            listengConfig.setBaseAesKey(CommonConstants.aesKey);
+            listengConfig.setTokenKey(CommonConstants.tokenKey);
+            listengConfig.setCreateServerSocket(createServerSocket);
+            ListenServerControl.createNewListenServer(listengConfig);
+        }
     }
 
     /**
@@ -134,13 +128,15 @@ public class ServerApp {
      */
     public static void simple() throws Exception {
         // 设置并启动客户端服务线程
-        SimpleClientServiceConfig config = new SimpleClientServiceConfig(servicePort);
+        SimpleClientServiceConfig config = new SimpleClientServiceConfig(CommonConstants.servicePort);
         new ClientServiceThread(config).start();
 
-        // 设置并启动一个穿透端口
-        SimpleListenServerConfig listengConfig = new SimpleListenServerConfig(listenPort);
-        listengConfig.setCreateServerSocket(createServerSocket);
-        ListenServerControl.createNewListenServer(listengConfig);
+        for (ListenDest model : CommonConstants.listenDestArray) {
+            // 设置并启动一个穿透端口
+            SimpleListenServerConfig listengConfig = new SimpleListenServerConfig(model.listenPort);
+            listengConfig.setCreateServerSocket(createServerSocket);
+            ListenServerControl.createNewListenServer(listengConfig);
+        }
     }
 
 }

@@ -1,5 +1,6 @@
 package person.pluto.natcross2;
 
+import person.pluto.natcross2.CommonConstants.ListenDest;
 import person.pluto.natcross2.clientside.ClientControlThread;
 import person.pluto.natcross2.clientside.config.AllSecretInteractiveClientConfig;
 import person.pluto.natcross2.clientside.config.InteractiveClientConfig;
@@ -16,11 +17,6 @@ import person.pluto.natcross2.clientside.config.SecretInteractiveClientConfig;
  */
 public class ClientApp {
 
-    // 穿透的目标，即要暴露在外网的内网IP
-    public static final String destIp = "127.0.0.1";
-    // 要暴露的内网端口
-    public static final int destPort = 8080;
-
     public static void main(String[] args) throws Exception {
 //        simple();
         secret();
@@ -35,24 +31,26 @@ public class ClientApp {
      * @throws Exception
      */
     public static void secretAll() throws Exception {
-        AllSecretInteractiveClientConfig config = new AllSecretInteractiveClientConfig();
+        for (ListenDest model : CommonConstants.listenDestArray) {
+            AllSecretInteractiveClientConfig config = new AllSecretInteractiveClientConfig();
 
-        // 设置服务端IP和端口
-        config.setClientServiceIp(ServerApp.serviceIp);
-        config.setClientServicePort(ServerApp.servicePort);
-        // 设置对外暴露的端口，该端口的启动在服务端，这里只是表明要跟服务端的那个监听服务对接
-        config.setListenServerPort(ServerApp.listenPort);
-        // 设置要暴露的目标IP和端口
-        config.setDestIp(destIp);
-        config.setDestPort(destPort);
+            // 设置服务端IP和端口
+            config.setClientServiceIp(CommonConstants.serviceIp);
+            config.setClientServicePort(CommonConstants.servicePort);
+            // 设置对外暴露的端口，该端口的启动在服务端，这里只是表明要跟服务端的那个监听服务对接
+            config.setListenServerPort(model.listenPort);
+            // 设置要暴露的目标IP和端口
+            config.setDestIp(model.destIp);
+            config.setDestPort(model.destPort);
 
-        // 设置交互密钥和签名key
-        config.setBaseAesKey(ServerApp.aesKey);
-        config.setTokenKey(ServerApp.tokenKey);
-        // 设置隧道交互密钥
-        config.setBasePasswayKey(ServerApp.aesKey);
+            // 设置交互密钥和签名key
+            config.setBaseAesKey(CommonConstants.aesKey);
+            config.setTokenKey(CommonConstants.tokenKey);
+            // 设置隧道交互密钥
+            config.setBasePasswayKey(CommonConstants.aesKey);
 
-        new ClientControlThread(config).createControl();
+            new ClientControlThread(config).createControl();
+        }
     }
 
     /**
@@ -63,22 +61,24 @@ public class ClientApp {
      * @throws Exception
      */
     public static void secret() throws Exception {
-        SecretInteractiveClientConfig config = new SecretInteractiveClientConfig();
+        for (ListenDest model : CommonConstants.listenDestArray) {
+            SecretInteractiveClientConfig config = new SecretInteractiveClientConfig();
 
-        // 设置服务端IP和端口
-        config.setClientServiceIp(ServerApp.serviceIp);
-        config.setClientServicePort(ServerApp.servicePort);
-        // 设置对外暴露的端口，该端口的启动在服务端，这里只是表明要跟服务端的那个监听服务对接
-        config.setListenServerPort(ServerApp.listenPort);
-        // 设置要暴露的目标IP和端口
-        config.setDestIp(destIp);
-        config.setDestPort(destPort);
+            // 设置服务端IP和端口
+            config.setClientServiceIp(CommonConstants.serviceIp);
+            config.setClientServicePort(CommonConstants.servicePort);
+            // 设置对外暴露的端口，该端口的启动在服务端，这里只是表明要跟服务端的那个监听服务对接
+            config.setListenServerPort(model.listenPort);
+            // 设置要暴露的目标IP和端口
+            config.setDestIp(model.destIp);
+            config.setDestPort(model.destPort);
 
-        // 设置交互密钥和签名key
-        config.setBaseAesKey(ServerApp.aesKey);
-        config.setTokenKey(ServerApp.tokenKey);
+            // 设置交互密钥和签名key
+            config.setBaseAesKey(CommonConstants.aesKey);
+            config.setTokenKey(CommonConstants.tokenKey);
 
-        new ClientControlThread(config).createControl();
+            new ClientControlThread(config).createControl();
+        }
     }
 
     /**
@@ -89,18 +89,20 @@ public class ClientApp {
      * @throws Exception
      */
     public static void simple() throws Exception {
-        InteractiveClientConfig config = new InteractiveClientConfig();
+        for (ListenDest model : CommonConstants.listenDestArray) {
+            InteractiveClientConfig config = new InteractiveClientConfig();
 
-        // 设置服务端IP和端口
-        config.setClientServiceIp(ServerApp.serviceIp);
-        config.setClientServicePort(ServerApp.servicePort);
-        // 设置对外暴露的端口，该端口的启动在服务端，这里只是表明要跟服务端的那个监听服务对接
-        config.setListenServerPort(ServerApp.listenPort);
-        // 设置要暴露的目标IP和端口
-        config.setDestIp(destIp);
-        config.setDestPort(destPort);
+            // 设置服务端IP和端口
+            config.setClientServiceIp(CommonConstants.serviceIp);
+            config.setClientServicePort(CommonConstants.servicePort);
+            // 设置对外暴露的端口，该端口的启动在服务端，这里只是表明要跟服务端的那个监听服务对接
+            config.setListenServerPort(model.listenPort);
+            // 设置要暴露的目标IP和端口
+            config.setDestIp(model.destIp);
+            config.setDestPort(model.destPort);
 
-        new ClientControlThread(config).createControl();
+            new ClientControlThread(config).createControl();
+        }
     }
 
 }
