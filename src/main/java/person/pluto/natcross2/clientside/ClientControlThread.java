@@ -119,6 +119,22 @@ public final class ClientControlThread implements Runnable, IBelongControl {
     public void stopClient() {
         isAlive = false;
 
+        if (myThread != null) {
+            myThread.interrupt();
+            myThread = null;
+        }
+    }
+
+    /**
+     ** 全部退出
+     *
+     * @author Pluto
+     * @since 2019-07-19 09:19:43
+     */
+    public void cancell() {
+
+        stopClient();
+
         if (this.clientHeartThread != null) {
             try {
                 this.clientHeartThread.cancel();
@@ -136,22 +152,6 @@ public final class ClientControlThread implements Runnable, IBelongControl {
             }
             this.clientAdapter = null;
         }
-
-        if (myThread != null) {
-            myThread.interrupt();
-            myThread = null;
-        }
-    }
-
-    /**
-     ** 全部退出
-     *
-     * @author Pluto
-     * @since 2019-07-19 09:19:43
-     */
-    public void cancell() {
-
-        stopClient();
 
         Set<String> keySet = socketPartMap.keySet();
         String[] array = keySet.toArray(new String[keySet.size()]);
