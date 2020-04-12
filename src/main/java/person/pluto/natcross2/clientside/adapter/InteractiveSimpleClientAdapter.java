@@ -95,6 +95,10 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
     @Override
     public boolean createControl() throws Exception {
         SocketChannel<? extends InteractiveModel, ? super InteractiveModel> socketChannel = this.newClientChannel();
+        if (socketChannel == null) {
+            log.error("向服务端[{}:{}]建立控制通道失败", this.config.getClientServiceIp(), this.config.getClientServicePort());
+            return false;
+        }
 
         InteractiveModel interactiveModel = InteractiveModel.of(InteractiveTypeEnum.CLIENT_CONTROL,
                 new ClientControlModel(this.config.getListenServerPort()));
