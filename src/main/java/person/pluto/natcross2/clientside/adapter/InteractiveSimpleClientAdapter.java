@@ -133,7 +133,20 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
 
         InteractiveTypeEnum interactiveTypeEnum = InteractiveTypeEnum.getEnumByName(interactiveType);
 
-        if (InteractiveTypeEnum.CLIENT_WAIT.equals(interactiveTypeEnum)) {
+        if (InteractiveTypeEnum.HEART_REPLY.equals(interactiveTypeEnum)) {
+            return;
+        }
+        if (InteractiveTypeEnum.HEART_TEST.equals(interactiveTypeEnum)) {
+            InteractiveModel sendModel = InteractiveModel.of(recvInteractiveModel.getInteractiveSeq(),
+                    InteractiveTypeEnum.HEART_REPLY, NatcrossResultEnum.SUCCESS.toResultModel());
+            try {
+                this.socketChannel.writeAndFlush(sendModel);
+            } catch (Exception e) {
+                log.error("回复是出错", e);
+            }
+            return;
+        }
+        if (InteractiveTypeEnum.SERVER_WAIT_CLIENT.equals(interactiveTypeEnum)) {
             ServerWaitModel serverWaitModel = jsonObject.toJavaObject(ServerWaitModel.class);
 
             executorService.execute(new Runnable() {
@@ -144,6 +157,8 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
             });
             return;
         }
+
+        log.warn("无处理方法的信息：[{}]", recvInteractiveModel);
 
         return;
     }
@@ -231,7 +246,8 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
 
     @Override
     public void sendUrgentData() throws Exception {
-        this.socketChannel.getSocket().sendUrgentData(0xff);
+        InteractiveModel interactiveModel = InteractiveModel.of(InteractiveTypeEnum.HEART_TEST, null);
+        this.socketChannel.writeAndFlush(interactiveModel);
     }
 
     public void setExecutorService(ExecutorService executorService) {

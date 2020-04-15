@@ -8,8 +8,6 @@ import person.pluto.natcross2.model.enumeration.NatcrossResultEnum;
 import person.pluto.natcross2.model.interactive.ClientControlModel;
 import person.pluto.natcross2.serverside.listen.ListenServerControl;
 import person.pluto.natcross2.serverside.listen.ServerListenThread;
-import person.pluto.natcross2.serverside.listen.config.IListenServerConfig;
-import person.pluto.natcross2.serverside.listen.control.IControlSocket;
 
 /**
  * 
@@ -44,10 +42,7 @@ public class ClientControlProcess implements IProcess {
         socketChannel.writeAndFlush(InteractiveModel.of(recvInteractiveModel.getInteractiveSeq(),
                 InteractiveTypeEnum.COMMON_REPLY, NatcrossResultModel.ofSuccess()));
 
-        IListenServerConfig config = serverListenThread.getConfig();
-        IControlSocket controlSocket = config.newControlSocket(socketChannel, null);
-
-        serverListenThread.setControlSocket(controlSocket);
+        serverListenThread.setControlSocket(socketChannel.getSocket());
         return true;
     }
 

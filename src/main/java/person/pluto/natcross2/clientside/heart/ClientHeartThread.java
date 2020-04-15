@@ -72,6 +72,7 @@ public class ClientHeartThread implements IClientHeartThread, Runnable {
         this.isAlive = true;
         if (myThread == null || !myThread.isAlive()) {
             myThread = new Thread(this);
+            myThread.setName("client-heart-" + clientControlThread.formatInfo());
             myThread.start();
         }
     }

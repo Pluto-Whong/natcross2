@@ -80,6 +80,7 @@ public final class ClientServiceThread implements Runnable {
         this.isAlive = true;
         if (myThread == null || !myThread.isAlive()) {
             myThread = new Thread(this);
+            myThread.setName("client-server-" + this.formatInfo());
 
             try {
                 // 启动时配置，若启动失败则执行cancell并再次抛出异常让上级处理
@@ -137,6 +138,17 @@ public final class ClientServiceThread implements Runnable {
      */
     public Integer getListenPort() {
         return this.config.getListenPort();
+    }
+
+    /**
+     * 格式化为短小的可识别信息
+     * 
+     * @author Pluto
+     * @since 2020-04-15 14:17:41
+     * @return
+     */
+    public String formatInfo() {
+        return String.valueOf(this.getListenPort());
     }
 
 }

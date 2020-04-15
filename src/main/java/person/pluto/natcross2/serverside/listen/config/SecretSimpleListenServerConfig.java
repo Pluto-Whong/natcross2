@@ -1,17 +1,15 @@
 package person.pluto.natcross2.serverside.listen.config;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.security.Key;
-
-import com.alibaba.fastjson.JSONObject;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import person.pluto.natcross2.channel.SecretInteractiveChannel;
 import person.pluto.natcross2.channel.SocketChannel;
-import person.pluto.natcross2.serverside.listen.control.ControlSocket;
-import person.pluto.natcross2.serverside.listen.control.IControlSocket;
+import person.pluto.natcross2.model.InteractiveModel;
 import person.pluto.natcross2.utils.AESUtil;
 
 /**
@@ -36,17 +34,18 @@ public class SecretSimpleListenServerConfig extends SimpleListenServerConfig {
     }
 
     @Override
-    public IControlSocket newControlSocket(SocketChannel<?, ?> socketChannel, JSONObject config) {
+    protected SocketChannel<? extends InteractiveModel, ? super InteractiveModel> newControlSocketChannel(
+            Socket socket) {
         SecretInteractiveChannel channel = new SecretInteractiveChannel();
         channel.setCharset(this.getCharset());
         channel.setTokenKey(tokenKey);
         channel.setAesKey(aesKey);
         try {
-            channel.setSocket(socketChannel.getSocket());
+            channel.setSocket(socket);
         } catch (IOException e) {
-            // do no thing
+            return null;
         }
-        return new ControlSocket(channel);
+        return channel;
     }
 
     /**

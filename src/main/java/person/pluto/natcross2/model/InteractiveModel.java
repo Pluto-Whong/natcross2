@@ -33,12 +33,12 @@ public class InteractiveModel implements JSONAware {
 
     public static InteractiveModel of(String interactiveSeq, InteractiveTypeEnum interactiveTypeEnum, Object data) {
         return new InteractiveModel(interactiveSeq, interactiveTypeEnum.name(),
-                JSON.parseObject(JSON.toJSONString(data)));
+                data == null ? null : JSON.parseObject(JSON.toJSONString(data)));
     }
 
     public static InteractiveModel of(InteractiveTypeEnum interactiveTypeEnum, Object data) {
         return new InteractiveModel(CommonFormat.getInteractiveSeq(), interactiveTypeEnum.name(),
-                JSON.parseObject(JSON.toJSONString(data)));
+                data == null ? null : JSON.parseObject(JSON.toJSONString(data)));
     }
 
     public static InteractiveModel of(String interactiveType, Object data) {

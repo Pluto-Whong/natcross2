@@ -1,5 +1,7 @@
 package person.pluto.natcross2.serverside.listen.control;
 
+import person.pluto.natcross2.serverside.listen.ServerListenThread;
+
 /**
  * 
  * <p>
@@ -37,5 +39,22 @@ public interface IControlSocket {
      * @since 2020-01-08 16:54:40
      */
     void close();
+
+    /**
+     * 开启接收线程
+     * 
+     * @author Pluto
+     * @since 2020-04-15 11:36:44
+     */
+    void startRecv();
+
+    /**
+     * 设置控制的监听线程
+     * 
+     * @author Pluto
+     * @since 2020-04-15 13:10:25
+     * @param serverListenThread
+     */
+    void setServerListen(ServerListenThread serverListenThread);
 
 }

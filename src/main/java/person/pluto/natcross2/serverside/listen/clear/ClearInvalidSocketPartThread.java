@@ -56,6 +56,7 @@ public class ClearInvalidSocketPartThread implements IClearInvalidSocketPartThre
         this.isAlive = true;
         if (myThread == null || !myThread.isAlive()) {
             myThread = new Thread(this);
+            myThread.setName("clear-invalid-socket-part-" + serverListenThread.formatInfo());
             myThread.start();
         }
         log.info("ClearInvalidSocketPartThread for [{}] started !", this.serverListenThread.getListenPort());

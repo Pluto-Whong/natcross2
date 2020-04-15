@@ -17,7 +17,11 @@ public enum InteractiveTypeEnum {
     //
     COMMON_REPLY("通用回复标签"),
     //
-    CLIENT_WAIT("需求客户端建立连接"),
+    HEART_TEST("发送心跳"),
+    //
+    HEART_REPLY("心跳检测回复"),
+    //
+    SERVER_WAIT_CLIENT("需求客户端建立连接"),
     //
     CLIENT_CONNECT("客户端建立通道连接"),
     //

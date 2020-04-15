@@ -128,6 +128,7 @@ public final class ServerListenThread implements Runnable, IBelongControl {
             }
 
             myThread = new Thread(this);
+            myThread.setName("server-listen-" + this.formatInfo());
             myThread.start();
         }
         log.info("server listen port[{}] is started!", this.getListenPort());
@@ -272,8 +273,11 @@ public final class ServerListenThread implements Runnable, IBelongControl {
      * @since 2019-07-18 18:46:05
      * @param controlSocket
      */
-    public void setControlSocket(IControlSocket controlSocket) {
+    public void setControlSocket(Socket socket) {
         log.info("setControlSocket[{}]", this.getListenPort());
+
+        IControlSocket controlSocket = this.config.newControlSocket(socket, null);
+
         if (this.controlSocket != null) {
             try {
                 this.controlSocket.close();
@@ -283,6 +287,8 @@ public final class ServerListenThread implements Runnable, IBelongControl {
             this.controlSocket = null;
         }
 
+        controlSocket.setServerListen(this);
+        controlSocket.startRecv();
         this.controlSocket = controlSocket;
         this.start();
     }
@@ -341,6 +347,10 @@ public final class ServerListenThread implements Runnable, IBelongControl {
      */
     public IListenServerConfig getConfig() {
         return config;
+    }
+
+    public String formatInfo() {
+        return String.valueOf(this.getListenPort());
     }
 
 }

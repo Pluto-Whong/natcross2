@@ -106,6 +106,7 @@ public final class ClientControlThread implements Runnable, IBelongControl {
             }
 
             myThread = new Thread(this);
+            myThread.setName("client-" + this.formatInfo());
             myThread.start();
         }
     }
@@ -221,6 +222,17 @@ public final class ClientControlThread implements Runnable, IBelongControl {
      */
     public void putSocketPart(String socketPartKey, AbsSocketPart socketPart) {
         this.socketPartMap.put(socketPartKey, socketPart);
+    }
+
+    /**
+     * 格式化信息
+     * 
+     * @author Pluto
+     * @since 2020-04-15 14:14:49
+     * @return
+     */
+    public String formatInfo() {
+        return String.valueOf(this.getListenServerPort());
     }
 
 }

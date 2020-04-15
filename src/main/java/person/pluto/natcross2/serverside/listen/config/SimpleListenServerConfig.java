@@ -2,6 +2,7 @@ package person.pluto.natcross2.serverside.listen.config;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -13,11 +14,13 @@ import person.pluto.natcross2.api.socketpart.AbsSocketPart;
 import person.pluto.natcross2.api.socketpart.SimpleSocketPart;
 import person.pluto.natcross2.channel.InteractiveChannel;
 import person.pluto.natcross2.channel.SocketChannel;
+import person.pluto.natcross2.model.InteractiveModel;
 import person.pluto.natcross2.serverside.listen.ServerListenThread;
 import person.pluto.natcross2.serverside.listen.clear.ClearInvalidSocketPartThread;
 import person.pluto.natcross2.serverside.listen.clear.IClearInvalidSocketPartThread;
 import person.pluto.natcross2.serverside.listen.control.ControlSocket;
 import person.pluto.natcross2.serverside.listen.control.IControlSocket;
+import person.pluto.natcross2.serverside.listen.recv.ClientHeartHandler;
 import person.pluto.natcross2.serverside.listen.serversocket.ICreateServerSocket;
 
 /**
@@ -56,15 +59,32 @@ public class SimpleListenServerConfig implements IListenServerConfig {
         }
     }
 
-    @Override
-    public IControlSocket newControlSocket(SocketChannel<?, ?> socketChannel, JSONObject config) {
+    /**
+     * 创建controlSocket使用channel
+     * 
+     * @author Pluto
+     * @since 2020-04-15 13:19:49
+     * @param socket
+     * @return
+     */
+    protected SocketChannel<? extends InteractiveModel, ? super InteractiveModel> newControlSocketChannel(
+            Socket socket) {
         InteractiveChannel interactiveChannel;
         try {
-            interactiveChannel = new InteractiveChannel(socketChannel.getSocket());
+            interactiveChannel = new InteractiveChannel(socket);
         } catch (IOException e) {
             return null;
         }
-        return new ControlSocket(interactiveChannel);
+        return interactiveChannel;
+    }
+
+    @Override
+    public IControlSocket newControlSocket(Socket socket, JSONObject config) {
+        SocketChannel<? extends InteractiveModel, ? super InteractiveModel> controlSocketChannel = this
+                .newControlSocketChannel(socket);
+        ControlSocket controlSocket = new ControlSocket(controlSocketChannel);
+        controlSocket.addRecvHandler(ClientHeartHandler.INSTANCE);
+        return controlSocket;
     }
 
     @Override

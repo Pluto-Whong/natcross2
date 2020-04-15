@@ -1,12 +1,12 @@
 package person.pluto.natcross2.serverside.listen.config;
 
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.charset.Charset;
 
 import com.alibaba.fastjson.JSONObject;
 
 import person.pluto.natcross2.api.socketpart.AbsSocketPart;
-import person.pluto.natcross2.channel.SocketChannel;
 import person.pluto.natcross2.serverside.listen.ServerListenThread;
 import person.pluto.natcross2.serverside.listen.clear.IClearInvalidSocketPartThread;
 import person.pluto.natcross2.serverside.listen.control.IControlSocket;
@@ -69,7 +69,7 @@ public interface IListenServerConfig {
      * @param config
      * @return
      */
-    IControlSocket newControlSocket(SocketChannel<?, ?> socketChannel, JSONObject config);
+    IControlSocket newControlSocket(Socket socket, JSONObject config);
 
     /**
      * 创建监听端口
