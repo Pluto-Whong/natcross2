@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.channel.SocketChannel;
@@ -37,36 +35,26 @@ public class ControlSocket implements IControlSocket, Runnable {
 
     protected List<IRecvHandler<? super InteractiveModel, ? extends InteractiveModel>> recvHandlerList = new LinkedList<>();
 
-    /**
-     * 锁定输出资源标志
-     */
-    private Lock socketLock = new ReentrantLock();
-
     public ControlSocket(SocketChannel<? extends InteractiveModel, ? super InteractiveModel> socketChannel) {
         this.socketChannel = socketChannel;
     }
 
     @Override
     public boolean isValid() {
-        socketLock.lock();
-        try {
-            if (this.socketChannel == null || this.socketChannel.getSocket() == null
-                    || !this.socketChannel.getSocket().isConnected() || this.socketChannel.getSocket().isClosed()) {
-                return false;
-            }
-
-            try {
-                // 心跳测试
-                InteractiveModel interactiveModel = InteractiveModel.of(InteractiveTypeEnum.HEART_TEST, null);
-                this.socketChannel.writeAndFlush(interactiveModel);
-            } catch (Exception e) {
-                return false;
-            }
-
-            return true;
-        } finally {
-            socketLock.unlock();
+        if (this.socketChannel == null || this.socketChannel.getSocket() == null
+                || !this.socketChannel.getSocket().isConnected() || this.socketChannel.getSocket().isClosed()) {
+            return false;
         }
+
+        try {
+            // 心跳测试
+            InteractiveModel interactiveModel = InteractiveModel.of(InteractiveTypeEnum.HEART_TEST, null);
+            this.socketChannel.writeAndFlush(interactiveModel);
+        } catch (Exception e) {
+            return false;
+        }
+
+        return true;
     }
 
     @Override
@@ -93,13 +81,10 @@ public class ControlSocket implements IControlSocket, Runnable {
         InteractiveModel model = InteractiveModel.of(InteractiveTypeEnum.SERVER_WAIT_CLIENT,
                 new ServerWaitModel(socketPartKey));
 
-        socketLock.lock();
         try {
             socketChannel.writeAndFlush(model);
         } catch (Exception e) {
             return false;
-        } finally {
-            socketLock.unlock();
         }
 
         return true;

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.concurrent.locks.ReentrantLock;
 
 import person.pluto.natcross2.utils.Tools;
 
@@ -12,6 +13,9 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
     private Socket socket;
     private InputStream inputStream;
     private OutputStream outputStream;
+
+    private ReentrantLock writeLock = new ReentrantLock();
+    private ReentrantLock readLock = new ReentrantLock();
 
     public LengthChannel() {
     }
@@ -22,28 +26,43 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
 
     @Override
     public byte[] read() throws Exception {
-        InputStream is = getInputSteam();
+        readLock.lock();
+        try {
+            InputStream is = getInputSteam();
 
-        byte[] len = new byte[4];
-        is.read(len);
-        int length = Tools.bytes2int(len);
+            byte[] len = new byte[4];
+            is.read(len);
+            int length = Tools.bytes2int(len);
 
-        byte[] b = new byte[length];
-        is.read(b, 0, length);
-        return b;
+            byte[] b = new byte[length];
+            is.read(b, 0, length);
+            return b;
+        } finally {
+            readLock.unlock();
+        }
     }
 
     @Override
     public void write(byte[] value) throws Exception {
-        OutputStream os = getOutputStream();
-        int length = value.length;
-        os.write(Tools.intToBytes(length));
-        os.write(value);
+        writeLock.lock();
+        try {
+            OutputStream os = getOutputStream();
+            int length = value.length;
+            os.write(Tools.intToBytes(length));
+            os.write(value);
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     @Override
     public void flush() throws Exception {
-        getOutputStream().flush();
+        writeLock.lock();
+        try {
+            getOutputStream().flush();
+        } finally {
+            writeLock.unlock();
+        }
     }
 
     @Override
