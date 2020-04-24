@@ -78,7 +78,7 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
      * @throws Exception
      */
     protected Socket newDestSocket() throws Exception {
-        return new Socket(this.config.getDestIp(), this.config.getDestPort());
+        return this.config.newDestSocket();
     }
 
     /**
@@ -222,8 +222,8 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
         // 将两个socket建立伙伴关系
         AbsSocketPart socketPart = this.newSocketPart();
         socketPart.setSocketPartKey(serverWaitModel.getSocketPartKey());
-        socketPart.setRecvSocket(destSocket);
         socketPart.setSendSocket(passwayClientChannel.getSocket());
+        socketPart.setRecvSocket(destSocket);
         // 尝试打通隧道
         boolean createPassWay = socketPart.createPassWay();
         if (!createPassWay) {

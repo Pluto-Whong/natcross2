@@ -1,5 +1,7 @@
 package person.pluto.natcross2.clientside.config;
 
+import java.net.Socket;
+
 import person.pluto.natcross2.api.socketpart.AbsSocketPart;
 import person.pluto.natcross2.channel.SocketChannel;
 import person.pluto.natcross2.clientside.ClientControlThread;
@@ -110,5 +112,17 @@ public interface IClientConfig<R, W> {
      * @return
      */
     AbsSocketPart newSocketPart(ClientControlThread clientControlThread);
+
+    /**
+     * 创建目标端口
+     * 
+     * @author Pluto
+     * @since 2020-04-23 16:07:56
+     * @return
+     * @throws Exception
+     */
+    default Socket newDestSocket() throws Exception {
+        return new Socket(this.getDestIp(), this.getDestPort());
+    };
 
 }

@@ -3,8 +3,10 @@ package person.pluto.natcross2;
 import person.pluto.natcross2.CommonConstants.ListenDest;
 import person.pluto.natcross2.clientside.ClientControlThread;
 import person.pluto.natcross2.clientside.config.AllSecretInteractiveClientConfig;
+import person.pluto.natcross2.clientside.config.HttpRouteClientConfig;
 import person.pluto.natcross2.clientside.config.InteractiveClientConfig;
 import person.pluto.natcross2.clientside.config.SecretInteractiveClientConfig;
+import person.pluto.natcross2.model.HttpRoute;
 
 /**
  * 
@@ -21,6 +23,45 @@ public class ClientApp {
 //        simple();
         secret();
 //        secretAll();
+//        secretHttpRoute();
+    }
+
+    /**
+     * http路由
+     * 
+     * 默认使用交互加密、数据不加密的策略
+     * 
+     * @author Pluto
+     * @since 2020-04-24 11:42:18
+     * @throws Exception
+     */
+    public static void secretHttpRoute() throws Exception {
+        HttpRoute[] routes = new HttpRoute[] {
+                //
+                HttpRoute.of("localhost", "127.0.0.1", 8080),
+                //
+                HttpRoute.of(true, "127.0.0.1", "192.168.0.211", 9020),
+                //
+        };
+
+        for (ListenDest model : CommonConstants.listenDestArray) {
+            SecretInteractiveClientConfig baseConfig = new SecretInteractiveClientConfig();
+
+            // 设置服务端IP和端口
+            baseConfig.setClientServiceIp(CommonConstants.serviceIp);
+            baseConfig.setClientServicePort(CommonConstants.servicePort);
+            // 设置对外暴露的端口，该端口的启动在服务端，这里只是表明要跟服务端的那个监听服务对接
+            baseConfig.setListenServerPort(model.listenPort);
+
+            // 设置交互密钥和签名key
+            baseConfig.setBaseAesKey(CommonConstants.aesKey);
+            baseConfig.setTokenKey(CommonConstants.tokenKey);
+
+            HttpRouteClientConfig config = new HttpRouteClientConfig(baseConfig);
+            config.addRoute(routes);
+
+            new ClientControlThread(config).createControl();
+        }
     }
 
     /**

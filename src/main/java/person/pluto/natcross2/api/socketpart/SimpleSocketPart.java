@@ -22,8 +22,8 @@ import person.pluto.natcross2.api.passway.SimplePassway;
 @Slf4j
 public class SimpleSocketPart extends AbsSocketPart implements IBelongControl {
 
-    private SimplePassway outToInPassway;
-    private SimplePassway inToOutPassway;
+    protected SimplePassway outToInPassway;
+    protected SimplePassway inToOutPassway;
 
     @Getter
     @Setter
