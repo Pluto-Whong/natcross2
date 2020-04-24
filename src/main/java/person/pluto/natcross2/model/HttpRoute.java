@@ -26,7 +26,7 @@ public class HttpRoute {
         return model;
     }
 
-    // 主路由，如果是多个
+    // 主路由，如果是多个则会去队列最后设置的那个
     private boolean master;
 
     // 请求时的域名host
