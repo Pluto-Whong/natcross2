@@ -137,7 +137,7 @@ public class HttpRouteClientConfig extends InteractiveClientConfig {
 
     @Override
     public void setDestIpPort(String destIp, Integer destPort) {
-        throw new UnsupportedOperationException();
+        // do nothing
     }
 
     @Override
@@ -207,22 +207,22 @@ public class HttpRouteClientConfig extends InteractiveClientConfig {
 
     @Override
     public String getDestIp() {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
     public void setDestIp(String destIp) {
-        throw new UnsupportedOperationException();
+        // do nothing
     }
 
     @Override
     public Integer getDestPort() {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
     public void setDestPort(Integer destPort) {
-        throw new UnsupportedOperationException();
+        // do nothing
     }
 
     @Override
