@@ -136,7 +136,7 @@
 			</build>
 		</profile>
 		<profile>
-			<id>clietnApp</id>
+			<id>clientApp</id>
 			<build>
 				<finalName>ClientApp</finalName>
 				<plugins>
