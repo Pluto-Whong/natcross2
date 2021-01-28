@@ -33,216 +33,223 @@ import person.pluto.natcross2.model.InteractiveModel;
 @Slf4j
 public class HttpRouteClientConfig extends InteractiveClientConfig {
 
-    private InteractiveClientConfig baseConfig;
+	private InteractiveClientConfig baseConfig;
 
-    private HttpRoute masterRoute = null;
-    private LinkedHashMap<String, HttpRoute> routeMap = new LinkedHashMap<>();
+	private HttpRoute masterRoute = null;
+	private LinkedHashMap<String, HttpRoute> routeMap = new LinkedHashMap<>();
 
-    private ReentrantLock routeLock = new ReentrantLock();
+	private ReentrantLock routeLock = new ReentrantLock();
 
-    public HttpRouteClientConfig() {
-        this.baseConfig = new InteractiveClientConfig();
-    }
+	public HttpRouteClientConfig() {
+		this.baseConfig = new InteractiveClientConfig();
+	}
 
-    public HttpRouteClientConfig(InteractiveClientConfig baseConfig) {
-        this.baseConfig = baseConfig;
-    }
+	public HttpRouteClientConfig(InteractiveClientConfig baseConfig) {
+		this.baseConfig = baseConfig;
+	}
 
-    /**
-     * 预设置
-     * 
-     * @author Pluto
-     * @since 2020-04-24 11:37:35
-     * @param masterRoute
-     * @param routeMap
-     */
-    public void presetRoute(HttpRoute masterRoute, LinkedHashMap<String, HttpRoute> routeMap) {
-        routeLock.lock();
-        this.masterRoute = masterRoute;
-        this.routeMap = routeMap;
-        routeLock.unlock();
-    }
+	/**
+	 * 预设置
+	 * 
+	 * @author Pluto
+	 * @since 2020-04-24 11:37:35
+	 * @param masterRoute
+	 * @param routeMap
+	 */
+	public void presetRoute(HttpRoute masterRoute, LinkedHashMap<String, HttpRoute> routeMap) {
+		Objects.requireNonNull(masterRoute, "主路由不得为空");
+		Objects.requireNonNull(routeMap, "路由表不得为null");
 
-    /**
-     * 增加路由
-     * 
-     * @author Pluto
-     * @since 2020-04-24 10:42:34
-     * @param httpRoutes
-     */
-    public void addRoute(HttpRoute... httpRoutes) {
-        if (httpRoutes == null || httpRoutes.length < 1) {
-            return;
-        }
-        routeLock.lock();
-        try {
-            if (Objects.isNull(masterRoute)) {
-                masterRoute = httpRoutes[0];
-            }
-            for (HttpRoute model : httpRoutes) {
-                routeMap.put(model.getHost(), model);
-                if (model.isMaster()) {
-                    masterRoute = model;
-                }
-            }
-        } finally {
-            routeLock.unlock();
-        }
-    }
+		routeLock.lock();
+		this.masterRoute = masterRoute;
+		this.routeMap = routeMap;
+		routeLock.unlock();
+	}
 
-    /**
-     * 清理路由
-     * 
-     * @author Pluto
-     * @since 2020-04-24 10:43:05
-     * @param hosts
-     */
-    public void clearRoute(String... hosts) {
-        if (Objects.isNull(hosts) || hosts.length < 1) {
-            return;
-        }
+	/**
+	 * 增加路由
+	 * 
+	 * @author Pluto
+	 * @since 2020-04-24 10:42:34
+	 * @param httpRoutes
+	 */
+	public void addRoute(HttpRoute... httpRoutes) {
+		if (httpRoutes == null || httpRoutes.length < 1) {
+			return;
+		}
+		routeLock.lock();
+		try {
+			if (Objects.isNull(masterRoute)) {
+				masterRoute = httpRoutes[0];
+			}
+			for (HttpRoute model : httpRoutes) {
+				routeMap.put(model.getHost(), model);
+				if (model.isMaster()) {
+					masterRoute = model;
+				}
+			}
+		} finally {
+			routeLock.unlock();
+		}
+	}
 
-        routeLock.lock();
-        try {
-            for (String host : hosts) {
-                routeMap.remove(host);
-                if (StringUtils.equals(masterRoute.getHost(), host)) {
-                    masterRoute = null;
-                }
-            }
+	/**
+	 * 清理路由
+	 * 
+	 * @author Pluto
+	 * @since 2020-04-24 10:43:05
+	 * @param hosts
+	 */
+	public void clearRoute(String... hosts) {
+		if (Objects.isNull(hosts) || hosts.length < 1) {
+			return;
+		}
 
-            if (Objects.isNull(masterRoute)) {
-                Collection<HttpRoute> values = routeMap.values();
-                Iterator<HttpRoute> iterator = values.iterator();
-                if (iterator.hasNext()) {
-                    // 先将第一个设置为主路由，再遍历所有，如果是主标志则设置为主，以最后的主为准
-                    masterRoute = iterator.next();
+		routeLock.lock();
+		try {
+			for (String host : hosts) {
+				routeMap.remove(host);
+				if (StringUtils.equals(masterRoute.getHost(), host)) {
+					masterRoute = null;
+				}
+			}
 
-                    while (iterator.hasNext()) {
-                        HttpRoute model = iterator.next();
-                        if (model.isMaster()) {
-                            masterRoute = model;
-                        }
-                    }
-                } else {
-                    log.warn("{}:{} 路由是空的，若需要重新设置，请使用preset进行设置", this.getClientServiceIp(),
-                            this.getClientServicePort());
-                }
-            }
-        } finally {
-            routeLock.unlock();
-        }
+			if (Objects.isNull(masterRoute)) {
+				Collection<HttpRoute> values = routeMap.values();
+				Iterator<HttpRoute> iterator = values.iterator();
+				if (iterator.hasNext()) {
+					// 先将第一个设置为主路由，再遍历所有，如果是主标志则设置为主，以最后的主为准
+					masterRoute = iterator.next();
 
-    }
+					while (iterator.hasNext()) {
+						HttpRoute model = iterator.next();
+						if (model.isMaster()) {
+							masterRoute = model;
+						}
+					}
+				} else {
+					log.warn("{}:{} 路由是空的，若需要重新设置，请使用preset进行设置", this.getClientServiceIp(),
+							this.getClientServicePort());
+				}
+			}
+		} finally {
+			routeLock.unlock();
+		}
 
-    @Override
-    public void setDestIpPort(String destIp, Integer destPort) {
-        // do nothing
-    }
+	}
 
-    @Override
-    public IClientHeartThread newClientHeartThread(ClientControlThread clientControlThread) {
-        return this.baseConfig.newClientHeartThread(clientControlThread);
-    }
+	@Override
+	public void setDestIpPort(String destIp, Integer destPort) {
+		// do nothing
+	}
 
-    @Override
-    public IClientAdapter<InteractiveModel, InteractiveModel> newCreateControlAdapter(
-            ClientControlThread clientControlThread) {
-        InteractiveSimpleClientAdapter simpleClientAdapter = new InteractiveSimpleClientAdapter(clientControlThread,
-                this);
-        return simpleClientAdapter;
-    }
+	@Override
+	public IClientHeartThread newClientHeartThread(ClientControlThread clientControlThread) {
+		return this.baseConfig.newClientHeartThread(clientControlThread);
+	}
 
-    @Override
-    public SocketChannel<? extends InteractiveModel, ? super InteractiveModel> newClientChannel() {
-        return this.baseConfig.newClientChannel();
-    }
+	@Override
+	public IClientAdapter<InteractiveModel, InteractiveModel> newCreateControlAdapter(
+			ClientControlThread clientControlThread) {
+		InteractiveSimpleClientAdapter simpleClientAdapter = new InteractiveSimpleClientAdapter(clientControlThread,
+				this);
+		return simpleClientAdapter;
+	}
 
-    @Override
-    public AbsSocketPart newSocketPart(ClientControlThread clientControlThread) {
-        HttpRouteSocketPart httpRouteSocketPart = new HttpRouteSocketPart(clientControlThread);
-        httpRouteSocketPart.setStreamCacheSize(this.getStreamCacheSize());
+	@Override
+	public SocketChannel<? extends InteractiveModel, ? super InteractiveModel> newClientChannel() {
+		return this.baseConfig.newClientChannel();
+	}
 
-        routeLock.lock();
-        httpRouteSocketPart.presetRoute(masterRoute, routeMap);
-        routeLock.unlock();
+	@Override
+	public AbsSocketPart newSocketPart(ClientControlThread clientControlThread) {
+		HttpRouteSocketPart httpRouteSocketPart;
 
-        return httpRouteSocketPart;
-    }
+		routeLock.lock();
+		try {
+			httpRouteSocketPart = new HttpRouteSocketPart(clientControlThread, masterRoute, routeMap);
+		} finally {
+			routeLock.unlock();
+		}
 
-    @Override
-    public Socket newDestSocket() throws Exception {
-        return new Socket();
-    }
+		httpRouteSocketPart.setStreamCacheSize(this.getStreamCacheSize());
 
-    @Override
-    public String getClientServiceIp() {
-        return baseConfig.getClientServiceIp();
-    }
+		return httpRouteSocketPart;
+	}
 
-    @Override
-    public void setClientServiceIp(String clientServiceIp) {
-        baseConfig.setClientServiceIp(clientServiceIp);
-    }
+	@Override
+	public Socket newDestSocket() throws Exception {
+		return new Socket();
+	}
 
-    @Override
-    public Integer getClientServicePort() {
-        return baseConfig.getClientServicePort();
-    }
+	@Override
+	public String getClientServiceIp() {
+		return baseConfig.getClientServiceIp();
+	}
 
-    @Override
-    public void setClientServicePort(Integer clientServicePort) {
-        baseConfig.setClientServicePort(clientServicePort);
-    }
+	@Override
+	public void setClientServiceIp(String clientServiceIp) {
+		baseConfig.setClientServiceIp(clientServiceIp);
+	}
 
-    @Override
-    public Integer getListenServerPort() {
-        return baseConfig.getListenServerPort();
-    }
+	@Override
+	public Integer getClientServicePort() {
+		return baseConfig.getClientServicePort();
+	}
 
-    @Override
-    public void setListenServerPort(Integer listenServerPort) {
-        baseConfig.setListenServerPort(listenServerPort);
-    }
+	@Override
+	public void setClientServicePort(Integer clientServicePort) {
+		baseConfig.setClientServicePort(clientServicePort);
+	}
 
-    @Override
-    public String getDestIp() {
-        return null;
-    }
+	@Override
+	public Integer getListenServerPort() {
+		return baseConfig.getListenServerPort();
+	}
 
-    @Override
-    public void setDestIp(String destIp) {
-        // do nothing
-    }
+	@Override
+	public void setListenServerPort(Integer listenServerPort) {
+		baseConfig.setListenServerPort(listenServerPort);
+	}
 
-    @Override
-    public Integer getDestPort() {
-        return null;
-    }
+	@Override
+	public String getDestIp() {
+		return null;
+	}
 
-    @Override
-    public void setDestPort(Integer destPort) {
-        // do nothing
-    }
+	@Override
+	public void setDestIp(String destIp) {
+		// do nothing
+	}
 
-    @Override
-    public Charset getCharset() {
-        return baseConfig.getCharset();
-    }
+	@Override
+	public Integer getDestPort() {
+		return null;
+	}
 
-    @Override
-    public void setCharset(Charset charset) {
-        baseConfig.setCharset(charset);
-    }
+	@Override
+	public void setDestPort(Integer destPort) {
+		// do nothing
+	}
 
-    @Override
-    public int getStreamCacheSize() {
-        return baseConfig.getStreamCacheSize();
-    }
+	@Override
+	public Charset getCharset() {
+		return baseConfig.getCharset();
+	}
 
-    @Override
-    public void setStreamCacheSize(int streamCacheSize) {
-        baseConfig.setStreamCacheSize(streamCacheSize);
-    };
+	@Override
+	public void setCharset(Charset charset) {
+		baseConfig.setCharset(charset);
+	}
+
+	@Override
+	public int getStreamCacheSize() {
+		return baseConfig.getStreamCacheSize();
+	}
+
+	@Override
+	public void setStreamCacheSize(int streamCacheSize) {
+		baseConfig.setStreamCacheSize(streamCacheSize);
+	};
 
 }
