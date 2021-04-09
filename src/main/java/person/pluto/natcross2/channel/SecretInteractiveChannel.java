@@ -33,7 +33,7 @@ public class SecretInteractiveChannel extends SocketChannel<InteractiveModel, In
     @Exclude
     @Setter(AccessLevel.NONE)
     @Getter(AccessLevel.NONE)
-    private JsonChannel channle;
+    private JsonChannel channel;
 
     /**
      * 签名混淆key
@@ -49,16 +49,16 @@ public class SecretInteractiveChannel extends SocketChannel<InteractiveModel, In
     private Long overtimeMills = 5000L;
 
     public SecretInteractiveChannel() {
-        this.channle = new JsonChannel();
+        this.channel = new JsonChannel();
     }
 
     public SecretInteractiveChannel(Socket socket) throws IOException {
-        this.channle = new JsonChannel(socket);
+        this.channel = new JsonChannel(socket);
     }
 
     @Override
     public InteractiveModel read() throws Exception {
-        JSONObject read = channle.read();
+        JSONObject read = channel.read();
         SecretInteractiveModel secretInteractiveModel = read.toJavaObject(SecretInteractiveModel.class);
         if (Math.abs(System.currentTimeMillis() - secretInteractiveModel.getTimestamp()) > overtimeMills) {
             throw new IllegalStateException("超时");
@@ -76,12 +76,12 @@ public class SecretInteractiveChannel extends SocketChannel<InteractiveModel, In
         SecretInteractiveModel secretInteractiveModel = new SecretInteractiveModel(value);
         secretInteractiveModel.setCharset(this.getCharset().name());
         secretInteractiveModel.fullMessage(aesKey, tokenKey);
-        channle.write(secretInteractiveModel);
+        channel.write(secretInteractiveModel);
     }
 
     @Override
     public void flush() throws Exception {
-        channle.flush();
+        channel.flush();
     }
 
     @Override
@@ -98,27 +98,27 @@ public class SecretInteractiveChannel extends SocketChannel<InteractiveModel, In
      * @return
      */
     public Charset getCharset() {
-        return channle.getCharset();
+        return channel.getCharset();
     }
 
     @Override
     public void setCharset(Charset charset) {
-        channle.setCharset(charset);
+        channel.setCharset(charset);
     }
 
     @Override
     public Socket getSocket() {
-        return channle.getSocket();
+        return channel.getSocket();
     }
 
     @Override
     public void setSocket(Socket socket) throws IOException {
-        channle.setSocket(socket);
+        channel.setSocket(socket);
     }
 
     @Override
     public void closeSocket() throws IOException {
-        channle.closeSocket();
+        channel.closeSocket();
     }
 
     /**

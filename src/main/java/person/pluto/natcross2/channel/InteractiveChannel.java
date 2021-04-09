@@ -22,30 +22,30 @@ public class InteractiveChannel extends SocketChannel<InteractiveModel, Interact
     /**
      * 实际通道
      */
-    private JsonChannel channle;
+    private JsonChannel channel;
 
     public InteractiveChannel() {
-        this.channle = new JsonChannel();
+        this.channel = new JsonChannel();
     }
 
     public InteractiveChannel(Socket socket) throws IOException {
-        this.channle = new JsonChannel(socket);
+        this.channel = new JsonChannel(socket);
     }
 
     @Override
     public InteractiveModel read() throws Exception {
-        JSONObject read = channle.read();
+        JSONObject read = channel.read();
         return read.toJavaObject(InteractiveModel.class);
     }
 
     @Override
     public void write(InteractiveModel value) throws Exception {
-        channle.write(value);
+        channel.write(value);
     }
 
     @Override
     public void flush() throws Exception {
-        channle.flush();
+        channel.flush();
     }
 
     @Override
@@ -62,27 +62,27 @@ public class InteractiveChannel extends SocketChannel<InteractiveModel, Interact
      * @return
      */
     public Charset getCharset() {
-        return channle.getCharset();
+        return channel.getCharset();
     }
 
     @Override
     public void setCharset(Charset charset) {
-        channle.setCharset(charset);
+        channel.setCharset(charset);
     }
 
     @Override
     public Socket getSocket() {
-        return channle.getSocket();
+        return channel.getSocket();
     }
 
     @Override
     public void setSocket(Socket socket) throws IOException {
-        channle.setSocket(socket);
+        channel.setSocket(socket);
     }
 
     @Override
     public void closeSocket() throws IOException {
-        channle.closeSocket();
+        channel.closeSocket();
     }
 
 }

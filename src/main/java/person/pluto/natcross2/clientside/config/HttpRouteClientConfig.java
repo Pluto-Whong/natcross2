@@ -1,6 +1,7 @@
 package person.pluto.natcross2.clientside.config;
 
 import java.net.Socket;
+import java.nio.channels.spi.SelectorProvider;
 import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Iterator;
@@ -17,6 +18,9 @@ import person.pluto.natcross2.channel.SocketChannel;
 import person.pluto.natcross2.clientside.ClientControlThread;
 import person.pluto.natcross2.clientside.adapter.IClientAdapter;
 import person.pluto.natcross2.clientside.adapter.InteractiveSimpleClientAdapter;
+import person.pluto.natcross2.clientside.handler.CommonReplyHandler;
+import person.pluto.natcross2.clientside.handler.ServerHeartHandler;
+import person.pluto.natcross2.clientside.handler.ServerWaitClientHandler;
 import person.pluto.natcross2.clientside.heart.IClientHeartThread;
 import person.pluto.natcross2.model.HttpRoute;
 import person.pluto.natcross2.model.InteractiveModel;
@@ -153,6 +157,9 @@ public class HttpRouteClientConfig extends InteractiveClientConfig {
 			ClientControlThread clientControlThread) {
 		InteractiveSimpleClientAdapter simpleClientAdapter = new InteractiveSimpleClientAdapter(clientControlThread,
 				this);
+		simpleClientAdapter.addMessageHandler(CommonReplyHandler.INSTANCE);
+		simpleClientAdapter.addMessageHandler(ServerHeartHandler.INSTANCE);
+		simpleClientAdapter.addMessageHandler(ServerWaitClientHandler.INSTANCE);
 		return simpleClientAdapter;
 	}
 
@@ -179,7 +186,9 @@ public class HttpRouteClientConfig extends InteractiveClientConfig {
 
 	@Override
 	public Socket newDestSocket() throws Exception {
-		return new Socket();
+		java.nio.channels.SocketChannel openSocketChannel = SelectorProvider.provider().openSocketChannel();
+		return openSocketChannel.socket();
+//		return new Socket();
 	}
 
 	@Override

@@ -1,7 +1,9 @@
 package person.pluto.natcross2.clientside.config;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.channels.spi.SelectorProvider;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -13,6 +15,9 @@ import person.pluto.natcross2.channel.SocketChannel;
 import person.pluto.natcross2.clientside.ClientControlThread;
 import person.pluto.natcross2.clientside.adapter.IClientAdapter;
 import person.pluto.natcross2.clientside.adapter.InteractiveSimpleClientAdapter;
+import person.pluto.natcross2.clientside.handler.CommonReplyHandler;
+import person.pluto.natcross2.clientside.handler.ServerHeartHandler;
+import person.pluto.natcross2.clientside.handler.ServerWaitClientHandler;
 import person.pluto.natcross2.clientside.heart.ClientHeartThread;
 import person.pluto.natcross2.clientside.heart.IClientHeartThread;
 import person.pluto.natcross2.model.InteractiveModel;
@@ -29,56 +34,62 @@ import person.pluto.natcross2.model.InteractiveModel;
 @Data
 public class InteractiveClientConfig implements IClientConfig<InteractiveModel, InteractiveModel> {
 
-    private String clientServiceIp;
-    private Integer clientServicePort;
-    private Integer listenServerPort;
+	private String clientServiceIp;
+	private Integer clientServicePort;
+	private Integer listenServerPort;
 
-    private String destIp;
-    private Integer destPort;
+	private String destIp;
+	private Integer destPort;
 
-    private Charset charset = StandardCharsets.UTF_8;
-    private int streamCacheSize = 8196;
+	private Charset charset = StandardCharsets.UTF_8;
+	private int streamCacheSize = 8196;
 
-    @Override
-    public void setDestIpPort(String destIp, Integer destPort) {
-        this.destIp = destIp;
-        this.destPort = destPort;
-    }
+	@Override
+	public void setDestIpPort(String destIp, Integer destPort) {
+		this.destIp = destIp;
+		this.destPort = destPort;
+	}
 
-    @Override
-    public IClientHeartThread newClientHeartThread(ClientControlThread clientControlThread) {
-        ClientHeartThread clientHeartThread = new ClientHeartThread(clientControlThread);
-        return clientHeartThread;
-    }
+	@Override
+	public IClientHeartThread newClientHeartThread(ClientControlThread clientControlThread) {
+		ClientHeartThread clientHeartThread = new ClientHeartThread(clientControlThread);
+		return clientHeartThread;
+	}
 
-    @Override
-    public IClientAdapter<InteractiveModel, InteractiveModel> newCreateControlAdapter(
-            ClientControlThread clientControlThread) {
-        InteractiveSimpleClientAdapter simpleClientAdapter = new InteractiveSimpleClientAdapter(clientControlThread,
-                this);
-        return simpleClientAdapter;
-    }
+	@Override
+	public IClientAdapter<InteractiveModel, InteractiveModel> newCreateControlAdapter(
+			ClientControlThread clientControlThread) {
+		InteractiveSimpleClientAdapter simpleClientAdapter = new InteractiveSimpleClientAdapter(clientControlThread,
+				this);
+		simpleClientAdapter.addMessageHandler(CommonReplyHandler.INSTANCE);
+		simpleClientAdapter.addMessageHandler(ServerHeartHandler.INSTANCE);
+		simpleClientAdapter.addMessageHandler(ServerWaitClientHandler.INSTANCE);
+		return simpleClientAdapter;
+	}
 
-    @Override
-    public SocketChannel<? extends InteractiveModel, ? super InteractiveModel> newClientChannel() {
-        InteractiveChannel interactiveChannel = new InteractiveChannel();
-        try {
-            Socket socket = new Socket(this.getClientServiceIp(), this.getClientServicePort());
-            interactiveChannel.setSocket(socket);
-        } catch (IOException e) {
-            return null;
-        }
+	@Override
+	public SocketChannel<? extends InteractiveModel, ? super InteractiveModel> newClientChannel() {
+		InteractiveChannel interactiveChannel = new InteractiveChannel();
+		try {
+			java.nio.channels.SocketChannel openSocketChannel = SelectorProvider.provider().openSocketChannel();
+			openSocketChannel.connect(new InetSocketAddress(this.getClientServiceIp(), this.getClientServicePort()));
+			Socket socket = openSocketChannel.socket();
+//			Socket socket = new Socket(this.getClientServiceIp(), this.getClientServicePort());
+			interactiveChannel.setSocket(socket);
+		} catch (IOException e) {
+			return null;
+		}
 
-        interactiveChannel.setCharset(charset);
+		interactiveChannel.setCharset(charset);
 
-        return interactiveChannel;
-    }
+		return interactiveChannel;
+	}
 
-    @Override
-    public AbsSocketPart newSocketPart(ClientControlThread clientControlThread) {
-        SimpleSocketPart simpleSocketPart = new SimpleSocketPart(clientControlThread);
-        simpleSocketPart.setStreamCacheSize(this.getStreamCacheSize());
-        return simpleSocketPart;
-    }
+	@Override
+	public AbsSocketPart newSocketPart(ClientControlThread clientControlThread) {
+		SimpleSocketPart simpleSocketPart = new SimpleSocketPart(clientControlThread);
+		simpleSocketPart.setStreamCacheSize(this.getStreamCacheSize());
+		return simpleSocketPart;
+	}
 
 }

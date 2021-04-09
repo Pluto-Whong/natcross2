@@ -22,19 +22,19 @@ public class JsonChannel extends SocketChannel<JSONObject, Object> {
     /**
      * 实际通道
      */
-    private StringChannel channle;
+    private StringChannel channel;
 
     public JsonChannel() {
-        channle = new StringChannel();
+        channel = new StringChannel();
     }
 
     public JsonChannel(Socket socket) throws IOException {
-        this.channle = new StringChannel(socket);
+        this.channel = new StringChannel(socket);
     }
 
     @Override
     public JSONObject read() throws Exception {
-        String read = channle.read();
+        String read = channel.read();
         return JSON.parseObject(read);
     }
 
@@ -46,12 +46,12 @@ public class JsonChannel extends SocketChannel<JSONObject, Object> {
         } else {
             string = JSON.toJSONString(value);
         }
-        channle.write(string);
+        channel.write(string);
     }
 
     @Override
     public void flush() throws Exception {
-        channle.flush();
+        channel.flush();
     }
 
     @Override
@@ -68,27 +68,27 @@ public class JsonChannel extends SocketChannel<JSONObject, Object> {
      * @return
      */
     public Charset getCharset() {
-        return channle.getCharset();
+        return channel.getCharset();
     }
 
     @Override
     public void setCharset(Charset charset) {
-        channle.setCharset(charset);
+        channel.setCharset(charset);
     }
 
     @Override
     public Socket getSocket() {
-        return channle.getSocket();
+        return channel.getSocket();
     }
 
     @Override
     public void setSocket(Socket socket) throws IOException {
-        channle.setSocket(socket);
+        channel.setSocket(socket);
     }
 
     @Override
     public void closeSocket() throws IOException {
-        channle.closeSocket();
+        channel.closeSocket();
     }
 
 }

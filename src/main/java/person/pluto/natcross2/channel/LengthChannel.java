@@ -4,118 +4,216 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.util.Iterator;
+import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 
 import person.pluto.natcross2.utils.Tools;
 
+/**
+ * 
+ * <p>
+ * 长度限定读写通道
+ * </p>
+ *
+ * @author Pluto
+ * @since 2021-04-08 12:42:38
+ */
 public class LengthChannel extends SocketChannel<byte[], byte[]> {
 
-    private Socket socket;
-    private InputStream inputStream;
-    private OutputStream outputStream;
+	private Selector selector;
 
-    private ReentrantLock writeLock = new ReentrantLock();
-    private ReentrantLock readLock = new ReentrantLock();
+	private Socket socket;
+	private java.nio.channels.SocketChannel socketChannel;
 
-    public LengthChannel() {
-    }
+	private InputStream inputStream;
+	private OutputStream outputStream;
 
-    public LengthChannel(Socket socket) throws IOException {
-        this.setSocket(socket);
-    }
+	private ReentrantLock readLock = new ReentrantLock(true);
+	private ReentrantLock writerLock = new ReentrantLock(true);
 
-    @Override
-    public byte[] read() throws Exception {
-        readLock.lock();
-        try {
-            InputStream is = getInputSteam();
+	private byte[] lenBytes = new byte[4];
 
-            byte[] len = new byte[4];
-            is.read(len);
-            int length = Tools.bytes2int(len);
+	public LengthChannel() {
+	}
 
-            byte[] b = new byte[length];
-            is.read(b, 0, length);
-            return b;
-        } finally {
-            readLock.unlock();
-        }
-    }
+	public LengthChannel(Socket socket) throws IOException {
+		this.setSocket(socket);
+	}
 
-    @Override
-    public void write(byte[] value) throws Exception {
-        writeLock.lock();
-        try {
-            OutputStream os = getOutputStream();
-            int length = value.length;
-            os.write(Tools.intToBytes(length));
-            os.write(value);
-        } finally {
-            writeLock.unlock();
-        }
-    }
+	private byte[] read(ByteBuffer buffer) throws IOException {
+		for (; buffer.position() < buffer.limit();) {
+			int select = selector.select();
+			if (select <= 0) {
+				continue;
+			}
 
-    @Override
-    public void flush() throws Exception {
-        writeLock.lock();
-        try {
-            getOutputStream().flush();
-        } finally {
-            writeLock.unlock();
-        }
-    }
+			Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
+			for (; iterator.hasNext();) {
+				SelectionKey key = iterator.next();
+				iterator.remove();
+				key.interestOps();
 
-    @Override
-    public void writeAndFlush(byte[] value) throws Exception {
-        this.write(value);
-        this.flush();
-    }
+				if (!key.isValid() || !key.isReadable()) {
+					continue;
+				}
 
-    @Override
-    public Socket getSocket() {
-        return socket;
-    }
+				int len = -1;
+				do {
+					len = this.socketChannel.read(buffer);
 
-    @Override
-    public void setSocket(Socket socket) throws IOException {
-        this.socket = socket;
-        this.inputStream = this.socket.getInputStream();
-        this.outputStream = this.socket.getOutputStream();
-    }
+					if (len < 0) {
+						if (buffer.position() < buffer.limit()) {
+							// 如果-1，提前关闭了，又没有获得足够的数据，那么就抛出异常
+							throw new IOException("Insufficient byte length when io closed");
+						} else {
+							// 如果够了，那就够了，-1的问题交给其他系统处理，拿到东西走就行
+							break;
+						}
+					}
+				} while (len > 0 && buffer.position() < buffer.limit());
 
-    @Override
-    public void closeSocket() throws IOException {
-        this.socket.close();
-    }
+				if (buffer.position() >= buffer.limit()) {
+					// 如果够了，就直接退出，剩下的是后续的交互，不要抢
+					break;
+				}
+			}
+		}
 
-    /**
-     * 惰性获取输入流
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:15:32
-     * @return
-     * @throws IOException
-     */
-    private InputStream getInputSteam() throws IOException {
-        if (this.inputStream == null) {
-            return this.socket.getInputStream();
-        }
-        return this.inputStream;
-    }
+		buffer.flip();
 
-    /**
-     * 惰性获取输出流
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:15:48
-     * @return
-     * @throws IOException
-     */
-    private OutputStream getOutputStream() throws IOException {
-        if (this.outputStream == null) {
-            return this.getSocket().getOutputStream();
-        }
-        return this.outputStream;
-    }
+		return buffer.array();
+	}
+
+	@Override
+	public byte[] read() throws Exception {
+		readLock.lock();
+		try {
+			java.nio.channels.SocketChannel inputChannel = this.socket.getChannel();
+			if (Objects.nonNull(inputChannel)) {
+				ByteBuffer buffer = ByteBuffer.wrap(lenBytes);
+
+				this.read(buffer);
+
+				int length = Tools.bytes2int(lenBytes);
+
+				buffer = ByteBuffer.allocate(length);
+
+				return this.read(buffer);
+			} else {
+				int offset = 0;
+
+				InputStream is = getInputSteam();
+
+				for (; offset < lenBytes.length;) {
+					offset += is.read(lenBytes, offset, lenBytes.length - offset);
+				}
+				int length = Tools.bytes2int(lenBytes);
+
+				offset = 0;
+				byte[] b = new byte[length];
+				for (; offset < length;) {
+					offset += is.read(b, offset, length - offset);
+				}
+				return b;
+			}
+		} finally {
+			readLock.unlock();
+		}
+	}
+
+	@Override
+	public void write(byte[] value) throws Exception {
+		writerLock.lock();
+		try {
+			if (this.getSocket().getChannel() != null) {
+				java.nio.channels.SocketChannel channel = this.getSocket().getChannel();
+				int length = value.length;
+				channel.write(ByteBuffer.wrap(Tools.intToBytes(length)));
+				channel.write(ByteBuffer.wrap(value));
+			} else {
+				OutputStream os = getOutputStream();
+				int length = value.length;
+				os.write(Tools.intToBytes(length));
+				os.write(value);
+			}
+		} finally {
+			writerLock.unlock();
+		}
+	}
+
+	@Override
+	public void flush() throws Exception {
+		writerLock.lock();
+		try {
+			getOutputStream().flush();
+		} finally {
+			writerLock.unlock();
+		}
+	}
+
+	@Override
+	public void writeAndFlush(byte[] value) throws Exception {
+		this.write(value);
+		this.flush();
+	}
+
+	@Override
+	public Socket getSocket() {
+		return socket;
+	}
+
+	@Override
+	public void setSocket(Socket socket) throws IOException {
+		this.socket = socket;
+
+		this.socketChannel = this.socket.getChannel();
+		if (Objects.nonNull(this.socketChannel)) {
+			selector = Selector.open();
+			this.socketChannel.configureBlocking(false);
+			this.socketChannel.register(selector, SelectionKey.OP_READ);
+		}
+
+		this.inputStream = this.socket.getInputStream();
+		this.outputStream = this.socket.getOutputStream();
+	}
+
+	@Override
+	public void closeSocket() throws IOException {
+		this.socket.close();
+	}
+
+	/**
+	 * 惰性获取输入流
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 16:15:32
+	 * @return
+	 * @throws IOException
+	 */
+	private InputStream getInputSteam() throws IOException {
+		if (this.inputStream == null) {
+			this.inputStream = this.socket.getInputStream();
+		}
+		return this.inputStream;
+	}
+
+	/**
+	 * 惰性获取输出流
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 16:15:48
+	 * @return
+	 * @throws IOException
+	 */
+	private OutputStream getOutputStream() throws IOException {
+		if (this.outputStream == null) {
+			this.outputStream = this.getSocket().getOutputStream();
+		}
+		return this.outputStream;
+	}
 
 }

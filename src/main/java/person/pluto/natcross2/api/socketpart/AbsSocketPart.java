@@ -1,6 +1,7 @@
 package person.pluto.natcross2.api.socketpart;
 
 import java.net.Socket;
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 import lombok.AccessLevel;
@@ -21,54 +22,68 @@ import person.pluto.natcross2.api.IBelongControl;
 @Data
 public abstract class AbsSocketPart {
 
-    @Setter(AccessLevel.NONE)
-    protected boolean isAlive = false;
-    @Setter(AccessLevel.NONE)
-    protected LocalDateTime createTime;
+	@Setter(AccessLevel.NONE)
+	protected boolean isAlive = false;
+	@Setter(AccessLevel.NONE)
+	protected LocalDateTime createTime;
 
-    @Setter(AccessLevel.NONE)
-    @Getter(AccessLevel.PROTECTED)
-    protected IBelongControl belongThread;
+	/**
+	 * 等待连接有效时间，ms
+	 */
+	@Getter
+	@Setter
+	private long invaildMillis = 60000L;
 
-    protected String socketPartKey;
-    /**
-     * 接受数据的socket；接受与发送的区分主要是主动发送方
-     */
-    protected Socket recvSocket;
-    /**
-     * 发送的socket
-     */
-    protected Socket sendSocket;
+	@Setter(AccessLevel.NONE)
+	@Getter(AccessLevel.PROTECTED)
+	protected IBelongControl belongThread;
 
-    public AbsSocketPart(IBelongControl belongThread) {
-        this.belongThread = belongThread;
-        this.createTime = LocalDateTime.now();
-    }
+	protected String socketPartKey;
+	/**
+	 * 接受数据的socket；接受与发送的区分主要是主动发送方
+	 */
+	protected Socket recvSocket;
+	/**
+	 * 发送的socket
+	 */
+	protected Socket sendSocket;
 
-    /**
-     * 是否有效
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:04:53
-     * @return
-     */
-    public abstract boolean isValid();
+	public AbsSocketPart(IBelongControl belongThread) {
+		this.belongThread = belongThread;
+		this.createTime = LocalDateTime.now();
+	}
 
-    /**
-     * 退出
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:04:59
-     */
-    public abstract void cancel();
+	/**
+	 * 是否有效
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 16:04:53
+	 * @return
+	 */
+	public boolean isValid() {
+		if (this.isAlive) {
+			return true;
+		}
 
-    /**
-     * 打通隧道
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:05:04
-     * @return
-     */
-    public abstract boolean createPassWay();
+		long millis = Duration.between(createTime, LocalDateTime.now()).toMillis();
+		return millis < invaildMillis;
+	}
+
+	/**
+	 * 退出
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 16:04:59
+	 */
+	public abstract void cancel();
+
+	/**
+	 * 打通隧道
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 16:05:04
+	 * @return
+	 */
+	public abstract boolean createPassWay();
 
 }

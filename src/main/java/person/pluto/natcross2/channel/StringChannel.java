@@ -16,32 +16,32 @@ import java.nio.charset.StandardCharsets;
  */
 public class StringChannel extends SocketChannel<String, String> {
 
-    private LengthChannel channle;
+    private LengthChannel channel;
 
     private Charset charset = StandardCharsets.UTF_8;
 
     public StringChannel() {
-        channle = new LengthChannel();
+        channel = new LengthChannel();
     }
 
     public StringChannel(Socket socket) throws IOException {
-        this.channle = new LengthChannel(socket);
+        this.channel = new LengthChannel(socket);
     }
 
     @Override
     public String read() throws Exception {
-        byte[] read = channle.read();
+        byte[] read = channel.read();
         return new String(read, charset);
     }
 
     @Override
     public void write(String value) throws Exception {
-        channle.write(value.getBytes(charset));
+        channel.write(value.getBytes(charset));
     }
 
     @Override
     public void flush() throws Exception {
-        channle.flush();
+        channel.flush();
     }
 
     @Override
@@ -68,17 +68,17 @@ public class StringChannel extends SocketChannel<String, String> {
 
     @Override
     public Socket getSocket() {
-        return channle.getSocket();
+        return channel.getSocket();
     }
 
     @Override
     public void setSocket(Socket socket) throws IOException {
-        channle.setSocket(socket);
+        channel.setSocket(socket);
     }
 
     @Override
     public void closeSocket() throws IOException {
-        channle.closeSocket();
+        channel.closeSocket();
     }
 
 }

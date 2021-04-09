@@ -1,8 +1,8 @@
 package person.pluto.natcross2.serverside.client.config;
 
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.Charset;
-import java.util.concurrent.ExecutorService;
 
 import person.pluto.natcross2.channel.SocketChannel;
 import person.pluto.natcross2.serverside.client.adapter.IClientServiceAdapter;
@@ -20,51 +20,50 @@ import person.pluto.natcross2.serverside.client.adapter.IClientServiceAdapter;
  */
 public interface IClientServiceConfig<R, W> {
 
-    /**
-     * 监听端口
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:43:51
-     * @return
-     */
-    Integer getListenPort();
+	/**
+	 * 监听端口
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 16:43:51
+	 * @return
+	 */
+	Integer getListenPort();
 
-    /**
-     * 执行使用的线程池
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:43:59
-     * @return
-     */
-    ExecutorService newProcExecutorService();
+	/**
+	 * 创建监听端口
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
+	ServerSocket createServerSocket() throws Exception;
 
-    /**
-     * 客户端适配器
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:44:14
-     * @return
-     */
-    IClientServiceAdapter getClientServiceAdapter();
+	/**
+	 * 客户端适配器
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 16:44:14
+	 * @return
+	 */
+	IClientServiceAdapter getClientServiceAdapter();
 
-    /**
-     * 交互通道
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:44:23
-     * @param listenSocket
-     * @return
-     * @throws Exception
-     */
-    SocketChannel<? extends R, ? super W> newSocketChannel(Socket listenSocket) throws Exception;
+	/**
+	 * 交互通道
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 16:44:23
+	 * @param listenSocket
+	 * @return
+	 * @throws Exception
+	 */
+	SocketChannel<? extends R, ? super W> newSocketChannel(Socket listenSocket) throws Exception;
 
-    /**
-     * 字符集
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:44:31
-     * @return
-     */
-    Charset getCharset();
+	/**
+	 * 字符集
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 16:44:31
+	 * @return
+	 */
+	Charset getCharset();
 
 }
