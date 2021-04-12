@@ -31,112 +31,111 @@ import person.pluto.natcross2.serverside.listen.config.SecretSimpleListenServerC
  */
 public class ServerApp {
 
-    // 你的p12格式的证书路径
-    private static String sslKeyStorePath = System.getenv("sslKeyStorePath");
-    // 你的证书密码
-    private static String sslKeyStorePassword = System.getenv("sslKeyStorePassword");
+	// 你的p12格式的证书路径
+	private static String sslKeyStorePath = System.getenv("sslKeyStorePath");
+	// 你的证书密码
+	private static String sslKeyStorePassword = System.getenv("sslKeyStorePassword");
 
-    public static ICreateServerSocket createServerSocket;
+	public static ICreateServerSocket createServerSocket;
 
-    public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Exception {
 
-        // 如果需要HTTPS协议的支持，则填写sslKeyStorePath、sslKeyStorePassword或在环境变量中定义
-        if (StringUtils.isNoneBlank(sslKeyStorePath, sslKeyStorePassword)) {
-            createServerSocket = new ICreateServerSocket() {
-                @Override
-                public ServerSocket createServerSocket(int listenPort) throws Exception {
-                    KeyStore kstore = KeyStore.getInstance("PKCS12");
-                    kstore.load(new FileInputStream(sslKeyStorePath), sslKeyStorePassword.toCharArray());
-                    KeyManagerFactory keyFactory = KeyManagerFactory.getInstance("sunx509");
-                    keyFactory.init(kstore, sslKeyStorePassword.toCharArray());
+		// 如果需要HTTPS协议的支持，则填写sslKeyStorePath、sslKeyStorePassword或在环境变量中定义
+		if (StringUtils.isNoneBlank(sslKeyStorePath, sslKeyStorePassword)) {
+			createServerSocket = new ICreateServerSocket() {
+				@Override
+				public ServerSocket createServerSocket(int listenPort) throws Exception {
+					KeyStore kstore = KeyStore.getInstance("PKCS12");
+					kstore.load(new FileInputStream(sslKeyStorePath), sslKeyStorePassword.toCharArray());
+					KeyManagerFactory keyFactory = KeyManagerFactory.getInstance("sunx509");
+					keyFactory.init(kstore, sslKeyStorePassword.toCharArray());
 
-                    SSLContext ctx = SSLContext.getInstance("TLSv1.2");
-                    ctx.init(keyFactory.getKeyManagers(), null, null);
+					SSLContext ctx = SSLContext.getInstance("TLSv1.2");
+					ctx.init(keyFactory.getKeyManagers(), null, null);
 
-                    SSLServerSocketFactory serverSocketFactory = ctx.getServerSocketFactory();
+					SSLServerSocketFactory serverSocketFactory = ctx.getServerSocketFactory();
 
-                    return serverSocketFactory.createServerSocket(listenPort);
-                }
-            };
-        }
-        createServerSocket = null;
+					return serverSocketFactory.createServerSocket(listenPort);
+				}
+			};
+		}
 
 //        simple();
-        secret();
+		secret();
 //        secretAll();
-    }
+	}
 
-    /**
-     * 交互、隧道都进行加密
-     * 
-     * @author Pluto
-     * @since 2020-01-08 17:29:26
-     * @throws Exception
-     */
-    public static void secretAll() throws Exception {
-        // 设置并启动客户端服务线程
-        SecretSimpleClientServiceConfig config = new SecretSimpleClientServiceConfig(CommonConstants.servicePort);
-        // 设置交互aes密钥和签名密钥
-        config.setBaseAesKey(CommonConstants.aesKey);
-        config.setTokenKey(CommonConstants.tokenKey);
-        new ClientServiceThread(config).start();
+	/**
+	 * 交互、隧道都进行加密
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 17:29:26
+	 * @throws Exception
+	 */
+	public static void secretAll() throws Exception {
+		// 设置并启动客户端服务线程
+		SecretSimpleClientServiceConfig config = new SecretSimpleClientServiceConfig(CommonConstants.servicePort);
+		// 设置交互aes密钥和签名密钥
+		config.setBaseAesKey(CommonConstants.aesKey);
+		config.setTokenKey(CommonConstants.tokenKey);
+		new ClientServiceThread(config).start();
 
-        for (ListenDest model : CommonConstants.listenDestArray) {
-            AllSecretSimpleListenServerConfig listengConfig = new AllSecretSimpleListenServerConfig(model.listenPort);
-            // 设置交互aes密钥和签名密钥，这里使用和客户端服务相同的密钥，可以根据需要设置不同的
-            listengConfig.setBaseAesKey(CommonConstants.aesKey);
-            listengConfig.setTokenKey(CommonConstants.tokenKey);
-            // 设置隧道密钥
-            listengConfig.setBasePasswayKey(CommonConstants.aesKey);
-            listengConfig.setCreateServerSocket(createServerSocket);
-            ListenServerControl.createNewListenServer(listengConfig);
-        }
-    }
+		for (ListenDest model : CommonConstants.listenDestArray) {
+			AllSecretSimpleListenServerConfig listengConfig = new AllSecretSimpleListenServerConfig(model.listenPort);
+			// 设置交互aes密钥和签名密钥，这里使用和客户端服务相同的密钥，可以根据需要设置不同的
+			listengConfig.setBaseAesKey(CommonConstants.aesKey);
+			listengConfig.setTokenKey(CommonConstants.tokenKey);
+			// 设置隧道密钥
+			listengConfig.setBasePasswayKey(CommonConstants.aesKey);
+			listengConfig.setCreateServerSocket(createServerSocket);
+			ListenServerControl.createNewListenServer(listengConfig);
+		}
+	}
 
-    /**
-     * 交互加密，即交互验证
-     * 
-     * @author Pluto
-     * @since 2020-01-08 17:28:54
-     * @throws Exception
-     */
-    public static void secret() throws Exception {
-        // 设置并启动客户端服务线程
-        SecretSimpleClientServiceConfig config = new SecretSimpleClientServiceConfig(CommonConstants.servicePort);
-        // 设置交互aes密钥和签名密钥
-        config.setBaseAesKey(CommonConstants.aesKey);
-        config.setTokenKey(CommonConstants.tokenKey);
-        new ClientServiceThread(config).start();
+	/**
+	 * 交互加密，即交互验证
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 17:28:54
+	 * @throws Exception
+	 */
+	public static void secret() throws Exception {
+		// 设置并启动客户端服务线程
+		SecretSimpleClientServiceConfig config = new SecretSimpleClientServiceConfig(CommonConstants.servicePort);
+		// 设置交互aes密钥和签名密钥
+		config.setBaseAesKey(CommonConstants.aesKey);
+		config.setTokenKey(CommonConstants.tokenKey);
+		new ClientServiceThread(config).start();
 
-        for (ListenDest model : CommonConstants.listenDestArray) {
-            // 设置并启动一个穿透端口
-            SecretSimpleListenServerConfig listengConfig = new SecretSimpleListenServerConfig(model.listenPort);
-            // 设置交互aes密钥和签名密钥，这里使用和客户端服务相同的密钥，可以根据需要设置不同的
-            listengConfig.setBaseAesKey(CommonConstants.aesKey);
-            listengConfig.setTokenKey(CommonConstants.tokenKey);
-            listengConfig.setCreateServerSocket(createServerSocket);
-            ListenServerControl.createNewListenServer(listengConfig);
-        }
-    }
+		for (ListenDest model : CommonConstants.listenDestArray) {
+			// 设置并启动一个穿透端口
+			SecretSimpleListenServerConfig listengConfig = new SecretSimpleListenServerConfig(model.listenPort);
+			// 设置交互aes密钥和签名密钥，这里使用和客户端服务相同的密钥，可以根据需要设置不同的
+			listengConfig.setBaseAesKey(CommonConstants.aesKey);
+			listengConfig.setTokenKey(CommonConstants.tokenKey);
+			listengConfig.setCreateServerSocket(createServerSocket);
+			ListenServerControl.createNewListenServer(listengConfig);
+		}
+	}
 
-    /**
-     * 无加密、无验证
-     * 
-     * @author Pluto
-     * @since 2020-01-08 17:29:02
-     * @throws Exception
-     */
-    public static void simple() throws Exception {
-        // 设置并启动客户端服务线程
-        SimpleClientServiceConfig config = new SimpleClientServiceConfig(CommonConstants.servicePort);
-        new ClientServiceThread(config).start();
+	/**
+	 * 无加密、无验证
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 17:29:02
+	 * @throws Exception
+	 */
+	public static void simple() throws Exception {
+		// 设置并启动客户端服务线程
+		SimpleClientServiceConfig config = new SimpleClientServiceConfig(CommonConstants.servicePort);
+		new ClientServiceThread(config).start();
 
-        for (ListenDest model : CommonConstants.listenDestArray) {
-            // 设置并启动一个穿透端口
-            SimpleListenServerConfig listengConfig = new SimpleListenServerConfig(model.listenPort);
-            listengConfig.setCreateServerSocket(createServerSocket);
-            ListenServerControl.createNewListenServer(listengConfig);
-        }
-    }
+		for (ListenDest model : CommonConstants.listenDestArray) {
+			// 设置并启动一个穿透端口
+			SimpleListenServerConfig listengConfig = new SimpleListenServerConfig(model.listenPort);
+			listengConfig.setCreateServerSocket(createServerSocket);
+			ListenServerControl.createNewListenServer(listengConfig);
+		}
+	}
 
 }
