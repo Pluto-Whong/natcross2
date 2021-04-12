@@ -47,6 +47,10 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 		this.routeMap.putAll(Objects.requireNonNull(routeMap, "路由表不得为null"));
 	}
 
+	// 这里的 : 好巧不巧的 0x20 位是1，可以利用一波
+	private static final byte[] hostMatcher = new byte[] { 'h', 'o', 's', 't', ':' };
+	private static final int colonIndex = hostMatcher.length - 1;
+
 	/**
 	 * 选择路由并连接至目标
 	 * 
@@ -60,16 +64,15 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 		InputStream inputStream = new BufferedInputStream(sendSocket.getInputStream());
 
 		// 缓存数据，不能我们处理了就不给实际应用
-		ByteArrayOutputStream output = new ByteArrayOutputStream();
+		ByteArrayOutputStream headerBufferStream = new ByteArrayOutputStream(1024);
 
 		// 临时输出列，用于读取一整行后进行字符串判断
-		ByteArrayOutputStream tempOutput = new ByteArrayOutputStream();
-		int flag = 0;
-		for (;;) {
+		ByteArrayOutputStream lineBufferStream = new ByteArrayOutputStream();
+
+		for (int flag = 0, lineCount = 0, matchFlag = 0;; lineCount++) {
 			// 依次读取
 			int read = inputStream.read();
-			output.write(read);
-			tempOutput.write(read);
+			lineBufferStream.write(read);
 
 			if (read < 0) {
 				break;
@@ -80,6 +83,17 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 				flag++;
 			} else {
 				flag = 0;
+				if (
+				// 这里matchFlag与lineCount不相等的频次比例较大，先比较
+				matchFlag == lineCount
+						// 肯定要小于了呀
+						&& lineCount < hostMatcher.length
+						// 如果是冒号的位置，需要完全相等
+						&& (matchFlag == colonIndex ? read == hostMatcher[matchFlag]
+								// 大写转小写，说好的可以利用 : 0x20 位是1 的特性呢😭
+								: (read | 0x20) == hostMatcher[matchFlag])) {
+					matchFlag++;
+				}
 			}
 
 			// 如果大于等于4则就表示http头结束了
@@ -89,23 +103,38 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 
 			// 等于2表示一行结束了，需要进行处理
 			if (flag == 2) {
-				// 将缓存中的数据进行字符串化，根据http标准，字符集为 ISO-8859-1
-				String line = new String(tempOutput.toByteArray(), httpCharset);
+				boolean isHostLine = (matchFlag == hostMatcher.length);
 
-				// 重置临时输出流
-				tempOutput = new ByteArrayOutputStream();
+				lineCount = 0;
+				matchFlag = 0;
 
-				if (StringUtils.startsWithIgnoreCase(line, "Host:")) {
+				// 省去一次拷贝的可能
+				lineBufferStream.writeTo(headerBufferStream);
+
+				if (isHostLine) {
+					// 重置临时输出流
+					byte[] byteArray = lineBufferStream.toByteArray();
+					lineBufferStream.reset();
+
+					// 将缓存中的数据进行字符串化，根据http标准，字符集为 ISO-8859-1
+					String line = new String(byteArray, httpCharset);
+
 					String host = StringUtils.removeStartIgnoreCase(line, "Host:").trim();
 					host = StringUtils.split(host, ':')[0];
 
 					willConnect = routeMap.get(host);
 
 					break;
+				} else {
+					// 重置临时输出流
+					lineBufferStream.reset();
 				}
 			}
 
 		}
+
+		// 将最后残留的输出
+		lineBufferStream.writeTo(headerBufferStream);
 
 		if (Objects.isNull(willConnect)) {
 			willConnect = masterRoute;
@@ -115,7 +144,7 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 		recvSocket.connect(destAddress);
 
 		OutputStream outputStream = recvSocket.getOutputStream();
-		outputStream.write(output.toByteArray());
+		headerBufferStream.writeTo(outputStream);
 
 		// emmm.... 用bufferedStream每次read不用单字节从硬件缓存里读呀，快了些呢，咋地了，不就是再拷贝一次嘛！
 		Tools.streamCopy(inputStream, outputStream);
