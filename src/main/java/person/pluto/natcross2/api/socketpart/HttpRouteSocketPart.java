@@ -9,8 +9,6 @@ import java.nio.charset.Charset;
 import java.util.LinkedHashMap;
 import java.util.Objects;
 
-import org.apache.commons.lang3.StringUtils;
-
 import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.api.IBelongControl;
 import person.pluto.natcross2.api.passway.SimplePassway;
@@ -30,6 +28,11 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 
 	private static final Charset httpCharset = Charset.forName("ISO-8859-1");
 
+	// 这里的 : 好巧不巧的 0x20 位是1，可以利用一波
+	private static final byte colonByte = ':';
+	private static final byte[] hostMatcher = new byte[] { 'h', 'o', 's', 't', colonByte };
+	private static final int colonIndex = hostMatcher.length - 1;
+
 	private final HttpRoute masterRoute;
 	private final LinkedHashMap<String, HttpRoute> routeMap = new LinkedHashMap<>();
 
@@ -46,10 +49,6 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 		this.masterRoute = Objects.requireNonNull(masterRoute, "主路由设置不得为空");
 		this.routeMap.putAll(Objects.requireNonNull(routeMap, "路由表不得为null"));
 	}
-
-	// 这里的 : 好巧不巧的 0x20 位是1，可以利用一波
-	private static final byte[] hostMatcher = new byte[] { 'h', 'o', 's', 't', ':' };
-	private static final int colonIndex = hostMatcher.length - 1;
 
 	/**
 	 * 选择路由并连接至目标
@@ -105,10 +104,11 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 			if (flag == 2) {
 				boolean isHostLine = (matchFlag == hostMatcher.length);
 
-				lineCount = 0;
+				// for循环特性，设置-1，营造line为0
+				lineCount = -1;
 				matchFlag = 0;
 
-				// 省去一次拷贝的可能
+				// 省去一次toByteArray拷贝的可能
 				lineBufferStream.writeTo(headerBufferStream);
 
 				if (isHostLine) {
@@ -116,11 +116,19 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 					byte[] byteArray = lineBufferStream.toByteArray();
 					lineBufferStream.reset();
 
-					// 将缓存中的数据进行字符串化，根据http标准，字符集为 ISO-8859-1
-					String line = new String(byteArray, httpCharset);
+					int left, right;
+					for (left = right = hostMatcher.length; right < byteArray.length; right++) {
+						if (byteArray[left] == ' ') {
+							// 左边先去掉空白，去除期间right不用判断
+							left++;
+						} else if (byteArray[right] == colonByte || byteArray[right] == ' ') {
+							// right位置到left位置必有字符，遇到空白或 : 则停下，与left中间的组合为host地址
+							break;
+						}
+					}
 
-					String host = StringUtils.removeStartIgnoreCase(line, "Host:").trim();
-					host = StringUtils.split(host, ':')[0];
+					// 将缓存中的数据进行字符串化，根据http标准，字符集为 ISO-8859-1
+					String host = new String(byteArray, left, right - left, httpCharset);
 
 					willConnect = routeMap.get(host);
 
