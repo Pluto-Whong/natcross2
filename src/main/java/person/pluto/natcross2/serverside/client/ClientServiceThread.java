@@ -3,6 +3,12 @@ package person.pluto.natcross2.serverside.client;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
+import java.util.Iterator;
+import java.util.Objects;
 
 import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.executor.NatcrossExecutor;
@@ -32,10 +38,45 @@ public final class ClientServiceThread implements Runnable {
 
 	@Override
 	public void run() {
+		Selector selector = null;
+
+		ServerSocketChannel channel = listenServerSocket.getChannel();
+
+		if (Objects.nonNull(channel)) {
+			try {
+				selector = Selector.open();
+
+				channel.configureBlocking(false);
+				channel.register(selector, SelectionKey.OP_ACCEPT);
+			} catch (IOException e) {
+				channel = null;
+			}
+		}
+
 		while (isAlive) {
 			try {
-				Socket listenSocket = listenServerSocket.accept();
-				procMethod(listenSocket);
+				if (Objects.isNull(selector)) {
+					Socket listenSocket = listenServerSocket.accept();
+					procMethod(listenSocket);
+				} else {
+					int select = selector.select();
+					if (select <= 0) {
+						continue;
+					}
+
+					Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
+
+					for (; iterator.hasNext();) {
+						SelectionKey key = iterator.next();
+						iterator.remove();
+
+						if (!key.isValid() || !key.isAcceptable()) {
+							continue;
+						}
+						SocketChannel accept = channel.accept();
+						procMethod(accept.socket());
+					}
+				}
 			} catch (Exception e) {
 				log.warn("客户端服务进程 轮询等待出现异常", e);
 			}

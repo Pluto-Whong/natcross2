@@ -85,10 +85,10 @@ public final class ServerListenThread implements Runnable, IBelongControl {
 					}
 
 					Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
+
 					for (; iterator.hasNext();) {
 						SelectionKey key = iterator.next();
 						iterator.remove();
-						key.interestOps();
 
 						if (!key.isValid() || !key.isAcceptable()) {
 							continue;

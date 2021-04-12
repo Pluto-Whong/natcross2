@@ -105,10 +105,10 @@ public class SimplePassway implements Runnable {
 					}
 
 					Iterator<SelectionKey> iterator = inputChannelSelector.selectedKeys().iterator();
+
 					for (; iterator.hasNext();) {
 						SelectionKey key = iterator.next();
 						iterator.remove();
-						key.interestOps();
 
 						if (!key.isValid() || !key.isReadable()) {
 							continue;

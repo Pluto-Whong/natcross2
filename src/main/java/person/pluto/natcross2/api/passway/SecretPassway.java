@@ -126,10 +126,10 @@ public class SecretPassway implements Runnable {
 					}
 
 					Iterator<SelectionKey> iterator = this.channelSelector.selectedKeys().iterator();
+
 					for (; iterator.hasNext();) {
 						SelectionKey key = iterator.next();
 						iterator.remove();
-						key.interestOps();
 
 						if (!key.isValid() || !key.isReadable()) {
 							continue;
