@@ -78,7 +78,7 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 			}
 
 			// 记录换行状态
-			if ((char) read == '\r' || (char) read == '\n') {
+			if (read == '\r' || read == '\n') {
 				flag++;
 			} else {
 				flag = 0;
@@ -112,8 +112,8 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 				lineBufferStream.writeTo(headerBufferStream);
 
 				if (isHostLine) {
-					// 重置临时输出流
 					byte[] byteArray = lineBufferStream.toByteArray();
+					// 重置行输出流
 					lineBufferStream.reset();
 
 					int left, right;
@@ -157,7 +157,7 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 		// emmm.... 用bufferedStream每次read不用单字节从硬件缓存里读呀，快了些呢，咋地了，不就是再拷贝一次嘛！
 		Tools.streamCopy(inputStream, outputStream);
 
-		// flush的原因，不排除这里全部读完了，导致缓存中没有数据，那及时创建了passway也不会主动flush而是挂在那里，防止遇到lazy的自动刷新特性
+		// flush的原因，不排除这里全部读完了，导致缓存中没有数据，那即使创建了passway也不会主动flush而是挂在那里，防止遇到lazy的自动刷新特性
 		outputStream.flush();
 	}
 
