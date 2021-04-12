@@ -20,10 +20,10 @@ import person.pluto.natcross2.model.HttpRoute;
 public class ClientApp {
 
 	public static void main(String[] args) throws Exception {
-//        simple();
-//		secret();
-//        secretAll();
-		secretHttpRoute();
+//		simple();
+		secret();
+//		secretAll();
+//		secretHttpRoute();
 	}
 
 	/**

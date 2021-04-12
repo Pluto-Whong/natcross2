@@ -92,8 +92,7 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
 	public byte[] read() throws Exception {
 		readLock.lock();
 		try {
-			java.nio.channels.SocketChannel inputChannel = this.socket.getChannel();
-			if (Objects.nonNull(inputChannel)) {
+			if (Objects.nonNull(this.socketChannel)) {
 				ByteBuffer buffer = ByteBuffer.wrap(lenBytes);
 
 				this.read(buffer);
@@ -129,11 +128,10 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
 	public void write(byte[] value) throws Exception {
 		writerLock.lock();
 		try {
-			if (this.getSocket().getChannel() != null) {
-				java.nio.channels.SocketChannel channel = this.getSocket().getChannel();
+			if (Objects.nonNull(this.socketChannel)) {
 				int length = value.length;
-				channel.write(ByteBuffer.wrap(Tools.intToBytes(length)));
-				channel.write(ByteBuffer.wrap(value));
+				this.socketChannel.write(ByteBuffer.wrap(Tools.intToBytes(length)));
+				this.socketChannel.write(ByteBuffer.wrap(value));
 			} else {
 				OutputStream os = getOutputStream();
 				int length = value.length;

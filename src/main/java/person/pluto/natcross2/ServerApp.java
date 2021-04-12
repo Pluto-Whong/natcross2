@@ -60,9 +60,9 @@ public class ServerApp {
 			};
 		}
 
-//        simple();
+//		simple();
 		secret();
-//        secretAll();
+//		secretAll();
 	}
 
 	/**
