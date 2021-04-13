@@ -17,15 +17,15 @@ import person.pluto.natcross2.serverside.client.adapter.PassValueNextEnum;
  */
 public interface IPassValueHandler<R, W> {
 
-    /**
-     * 处理方法
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:48:01
-     * @param socketChannel 交互通道
-     * @param optional      可以重设值
-     * @return
-     */
-    PassValueNextEnum proc(SocketChannel<? extends R, ? super W> socketChannel, Optional<? extends R> optional);
+	/**
+	 * 处理方法
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 16:48:01
+	 * @param socketChannel 交互通道
+	 * @param optional      可以重设值
+	 * @return
+	 */
+	PassValueNextEnum proc(SocketChannel<? extends R, ? super W> socketChannel, Optional<? extends R> optional);
 
 }
