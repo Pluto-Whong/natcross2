@@ -6,15 +6,17 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.Iterator;
 import java.util.Objects;
 
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.api.IBelongControl;
 import person.pluto.natcross2.executor.NatcrossExecutor;
+import person.pluto.natcross2.nio.INioProcesser;
+import person.pluto.natcross2.nio.NioHallows;
 
 /**
  * <p>
@@ -25,7 +27,7 @@ import person.pluto.natcross2.executor.NatcrossExecutor;
  * @since 2020-01-08 15:58:11
  */
 @Slf4j
-public class SimplePassway implements Runnable {
+public class SimplePassway implements Runnable, INioProcesser {
 
 	private boolean alive = false;
 
@@ -46,10 +48,22 @@ public class SimplePassway implements Runnable {
 	@Setter
 	private Socket sendSocket;
 
-	private Selector inputChannelSelector;
-
 	private OutputStream outputStream;
 	private SocketChannel outputChannel;
+
+	private OutputStream getOutputStream() throws IOException {
+		if (Objects.isNull(this.outputStream)) {
+			this.outputStream = sendSocket.getOutputStream();
+		}
+		return this.outputStream;
+	}
+
+	private SocketChannel getSocketChannel() {
+		if (Objects.isNull(this.outputChannel)) {
+			this.outputChannel = sendSocket.getChannel();
+		}
+		return this.outputChannel;
+	}
 
 	/**
 	 * 向输出通道输出数据
@@ -67,71 +81,24 @@ public class SimplePassway implements Runnable {
 	 * @since 2021-04-09 16:37:33
 	 */
 	private void write(ByteBuffer byteBuffer) throws IOException {
-		if (Objects.nonNull(outputChannel)) {
-			outputChannel.write(byteBuffer);
+		if (Objects.nonNull(this.getSocketChannel())) {
+			this.getSocketChannel().write(byteBuffer);
 		} else {
-			outputStream.write(byteBuffer.array(), byteBuffer.position(), byteBuffer.limit());
-			outputStream.flush();
+			this.getOutputStream().write(byteBuffer.array(), byteBuffer.position(), byteBuffer.limit());
+			this.getOutputStream().flush();
 		}
 	}
 
 	@Override
 	public void run() {
 		try {
-			outputChannel = sendSocket.getChannel();
-			outputStream = sendSocket.getOutputStream();
+			InputStream inputStream = recvSocket.getInputStream();
 
-			if (Objects.isNull(recvSocket.getChannel())) {
-				InputStream inputStream = recvSocket.getInputStream();
+			int len = -1;
+			byte[] arrayTemp = new byte[streamCacheSize];
 
-				int len = -1;
-				byte[] arrayTemp = new byte[streamCacheSize];
-
-				while (alive && (len = inputStream.read(arrayTemp)) > 0) {
-					this.write(ByteBuffer.wrap(arrayTemp, 0, len));
-				}
-			} else {
-				inputChannelSelector = Selector.open();
-
-				SocketChannel inputChannel = recvSocket.getChannel();
-				inputChannel.configureBlocking(false);
-				inputChannel.register(inputChannelSelector, SelectionKey.OP_READ);
-
-				ByteBuffer buffer = ByteBuffer.allocate(streamCacheSize);
-				s: for (; alive;) {
-					int select = inputChannelSelector.select();
-					if (select <= 0) {
-						continue;
-					}
-
-					Iterator<SelectionKey> iterator = inputChannelSelector.selectedKeys().iterator();
-
-					for (; iterator.hasNext();) {
-						SelectionKey key = iterator.next();
-						iterator.remove();
-
-						if (!key.isValid() || !key.isReadable()) {
-							continue;
-						}
-
-						int len = -1;
-						do {
-							buffer.clear();
-
-							len = inputChannel.read(buffer);
-
-							if (len < 0) {
-								break s;
-							}
-
-							buffer.flip();
-							if (buffer.hasRemaining()) {
-								this.write(buffer);
-							}
-
-						} while (len > 0);
-					}
-				}
+			while (alive && (len = inputStream.read(arrayTemp)) > 0) {
+				this.write(ByteBuffer.wrap(arrayTemp, 0, len));
 			}
 		} catch (IOException e) {
 			// do nothing
@@ -141,9 +108,57 @@ public class SimplePassway implements Runnable {
 
 		// 传输完成后退出
 		this.cancell();
-		if (belongControl != null) {
-			belongControl.noticeStop();
+	}
+
+	// ============== nio =================
+
+	@Setter(AccessLevel.NONE)
+	@Getter(AccessLevel.NONE)
+	private ByteBuffer byteBuffer;
+
+	private ByteBuffer obtainByteBuffer() {
+		if (Objects.isNull(byteBuffer)) {
+			byteBuffer = ByteBuffer.allocate(streamCacheSize);
 		}
+		return byteBuffer;
+	}
+
+	@Override
+	public void proccess(SelectionKey key) {
+		ByteBuffer buffer = this.obtainByteBuffer();
+
+		SocketChannel inputChannel = (SocketChannel) key.channel();
+		try {
+			if (!key.isReadable()) {
+				return;
+			}
+
+			int len = -1;
+			do {
+				buffer.clear();
+
+				len = inputChannel.read(buffer);
+
+				if (len > 0) {
+					buffer.flip();
+					if (buffer.hasRemaining()) {
+						this.write(buffer);
+					}
+				}
+
+			} while (len > 0);
+
+			// 如果不是负数，则还没有断开连接，返回继续等待
+			if (len >= 0) {
+				return;
+			}
+		} catch (IOException e) {
+			//
+		}
+
+		log.debug("one InputToOutputThread closed");
+
+		this.cancell();
 	}
 
 	/**
@@ -166,6 +181,8 @@ public class SimplePassway implements Runnable {
 	public void cancell() {
 		this.alive = false;
 
+		NioHallows.release(recvSocket.getChannel());
+
 		try {
 			this.recvSocket.close();
 			this.sendSocket.close();
@@ -173,8 +190,12 @@ public class SimplePassway implements Runnable {
 			// do no thing
 		}
 
-		if (Objects.nonNull(this.inputChannelSelector)) {
-			this.inputChannelSelector.wakeup();
+		if (belongControl != null) {
+			IBelongControl belong = belongControl;
+			belongControl = null;
+			if (belong != null) {
+				belong.noticeStop();
+			}
 		}
 	}
 
@@ -187,7 +208,17 @@ public class SimplePassway implements Runnable {
 	public void start() {
 		if (!this.alive) {
 			this.alive = true;
-			NatcrossExecutor.executePassway(this);
+
+			if (Objects.isNull(recvSocket.getChannel())) {
+				NatcrossExecutor.executePassway(this);
+			} else {
+				try {
+					NioHallows.register(recvSocket.getChannel(), SelectionKey.OP_READ, this);
+				} catch (IOException e) {
+					this.cancell();
+					return;
+				}
+			}
 		}
 	}
 

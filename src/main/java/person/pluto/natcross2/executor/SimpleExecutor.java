@@ -19,24 +19,4 @@ public class SimpleExecutor implements IExecutor {
 		executor.execute(runnable);
 	}
 
-	@Override
-	public void executeServerListenAccept(Runnable runnable) {
-		execute(runnable);
-	}
-
-	@Override
-	public void executeClientServiceAccept(Runnable runnable) {
-		execute(runnable);
-	}
-
-	@Override
-	public void executeClientMessageProc(Runnable runnable) {
-		execute(runnable);
-	}
-
-	@Override
-	public void executePassway(Runnable runnable) {
-		execute(runnable);
-	}
-
 }

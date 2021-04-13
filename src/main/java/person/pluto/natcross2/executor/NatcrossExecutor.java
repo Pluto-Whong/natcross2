@@ -46,4 +46,8 @@ public final class NatcrossExecutor {
 		INSTANCE.executePassway(runnable);
 	}
 
+	public static void executeNioAction(Runnable runnable) {
+		INSTANCE.executeNioAction(runnable);
+	}
+
 }

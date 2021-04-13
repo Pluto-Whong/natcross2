@@ -6,17 +6,20 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.Iterator;
 import java.util.Objects;
 
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.api.IBelongControl;
 import person.pluto.natcross2.api.secret.ISecret;
 import person.pluto.natcross2.channel.LengthChannel;
 import person.pluto.natcross2.executor.NatcrossExecutor;
+import person.pluto.natcross2.nio.INioProcesser;
+import person.pluto.natcross2.nio.NioHallows;
 
 /**
  * 
@@ -29,7 +32,7 @@ import person.pluto.natcross2.executor.NatcrossExecutor;
  */
 @Data
 @Slf4j
-public class SecretPassway implements Runnable {
+public class SecretPassway implements Runnable, INioProcesser {
 
 	public static enum Mode {
 		// 从无加密接受到加密输出
@@ -51,8 +54,6 @@ public class SecretPassway implements Runnable {
 	private Socket recvSocket;
 	private Socket sendSocket;
 
-	private Selector channelSelector;
-
 	@Override
 	public void run() {
 
@@ -68,9 +69,6 @@ public class SecretPassway implements Runnable {
 
 		// 传输完成后退出
 		this.cancell();
-		if (belongControl != null) {
-			belongControl.noticeStop();
-		}
 	}
 
 	/**
@@ -102,6 +100,22 @@ public class SecretPassway implements Runnable {
 		}
 	}
 
+	@Setter(AccessLevel.NONE)
+	@Getter(AccessLevel.NONE)
+	private LengthChannel sendChannel;
+
+	private LengthChannel obtainSendChannel() throws IOException {
+		if (Objects.isNull(sendChannel)) {
+			this.sendChannel = new LengthChannel(sendSocket);
+		}
+		return this.sendChannel;
+	}
+
+	private void sendWriteAndFlush(byte[] arrayTemp, int offset, int len) throws Exception {
+		byte[] encrypt = secret.encrypt(arrayTemp, offset, len);
+		obtainSendChannel().writeAndFlush(encrypt);
+	}
+
 	/**
 	 * 从无加密侧，经过加密后输出到加密侧
 	 * 
@@ -110,63 +124,65 @@ public class SecretPassway implements Runnable {
 	 * @throws Exception
 	 */
 	private void noToSecret() throws Exception {
-		if (Objects.nonNull(recvSocket.getChannel())) {
-			try (SocketChannel inputChannel = recvSocket.getChannel();
-					LengthChannel sendChannel = new LengthChannel(sendSocket)) {
-				this.channelSelector = Selector.open();
+		try (InputStream inputStream = recvSocket.getInputStream();
+				LengthChannel sendChannel = new LengthChannel(sendSocket)) {
+			int len = -1;
+			byte[] arrayTemp = new byte[streamCacheSize];
 
-				inputChannel.configureBlocking(false);
-				inputChannel.register(this.channelSelector, SelectionKey.OP_READ);
-
-				ByteBuffer buffer = ByteBuffer.allocate(streamCacheSize);
-				s: for (; alive;) {
-					int select = this.channelSelector.select();
-					if (select <= 0) {
-						continue;
-					}
-
-					Iterator<SelectionKey> iterator = this.channelSelector.selectedKeys().iterator();
-
-					for (; iterator.hasNext();) {
-						SelectionKey key = iterator.next();
-						iterator.remove();
-
-						if (!key.isValid() || !key.isReadable()) {
-							continue;
-						}
-
-						int len = -1;
-						do {
-							buffer.clear();
-
-							len = inputChannel.read(buffer);
-
-							if (len < 0) {
-								break s;
-							}
-
-							buffer.flip();
-							if (buffer.hasRemaining()) {
-								byte[] encrypt = secret.encrypt(buffer.array(), buffer.position(), buffer.limit());
-								sendChannel.writeAndFlush(encrypt);
-							}
-
-						} while (len > 0);
-					}
-				}
-			}
-		} else {
-			try (InputStream inputStream = recvSocket.getInputStream();
-					LengthChannel sendChannel = new LengthChannel(sendSocket)) {
-				int len = -1;
-				byte[] arrayTemp = new byte[streamCacheSize];
-
-				while (alive && (len = inputStream.read(arrayTemp)) > 0) {
-					byte[] encrypt = secret.encrypt(arrayTemp, 0, len);
-					sendChannel.writeAndFlush(encrypt);
-				}
+			while (alive && (len = inputStream.read(arrayTemp)) > 0) {
+				this.sendWriteAndFlush(arrayTemp, 0, len);
 			}
 		}
+	}
+
+	// ====================== nio =========================
+	@Setter(AccessLevel.NONE)
+	@Getter(AccessLevel.NONE)
+	private ByteBuffer byteBuffer;
+
+	private ByteBuffer obtainByteBuffer() {
+		if (Objects.isNull(byteBuffer)) {
+			byteBuffer = ByteBuffer.allocate(streamCacheSize);
+		}
+		return byteBuffer;
+	}
+
+	@Override
+	public void proccess(SelectionKey key) {
+		ByteBuffer buffer = this.obtainByteBuffer();
+
+		SocketChannel inputChannel = (SocketChannel) key.channel();
+		try {
+			if (!key.isReadable()) {
+				return;
+			}
+
+			int len = -1;
+			do {
+				buffer.clear();
+
+				len = inputChannel.read(buffer);
+
+				if (len > 0) {
+					buffer.flip();
+					if (buffer.hasRemaining()) {
+						this.sendWriteAndFlush(buffer.array(), buffer.position(), buffer.limit());
+					}
+				}
+
+			} while (len > 0);
+
+			// 如果不是负数，则还没有断开连接，返回继续等待
+			if (len >= 0) {
+				return;
+			}
+		} catch (Exception e) {
+			//
+		}
+
+		log.debug("one InputToOutputThread closed");
+
+		this.cancell();
 	}
 
 	/**
@@ -189,6 +205,8 @@ public class SecretPassway implements Runnable {
 	public void cancell() {
 		this.alive = false;
 
+		NioHallows.release(recvSocket.getChannel());
+
 		try {
 			this.recvSocket.close();
 			this.sendSocket.close();
@@ -196,8 +214,12 @@ public class SecretPassway implements Runnable {
 			// do no thing
 		}
 
-		if (Objects.nonNull(this.channelSelector)) {
-			this.channelSelector.wakeup();
+		if (belongControl != null) {
+			IBelongControl belong = belongControl;
+			belongControl = null;
+			if (belong != null) {
+				belong.noticeStop();
+			}
 		}
 	}
 
@@ -210,7 +232,17 @@ public class SecretPassway implements Runnable {
 	public void start() {
 		if (!this.alive) {
 			this.alive = true;
-			NatcrossExecutor.executePassway(this);
+
+			if (!Mode.noToSecret.equals(mode) || Objects.isNull(recvSocket.getChannel())) {
+				NatcrossExecutor.executePassway(this);
+			} else {
+				try {
+					NioHallows.register(recvSocket.getChannel(), SelectionKey.OP_READ, this);
+				} catch (IOException e) {
+					this.cancell();
+					return;
+				}
+			}
 		}
 	}
 

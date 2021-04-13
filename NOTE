@@ -2,3 +2,4 @@ VERSION 2.2
 1. socket使用channel方式，交互使用DMA策略
 2. 监听端口、控制端口获得新连接后使用子线程方式进行异步操作
 3. 优化了http路由算法，提高了路由选择时的速度
+4. passWay使用了nio策略，统一交付NioHallows处理
