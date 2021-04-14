@@ -181,6 +181,9 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
 
 	@Override
 	public void closeSocket() throws IOException {
+		if (Objects.nonNull(selector)) {
+			selector.close();
+		}
 		this.socket.close();
 	}
 
@@ -212,6 +215,13 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
 			this.outputStream = this.getSocket().getOutputStream();
 		}
 		return this.outputStream;
+	}
+
+	protected void finalize() throws Throwable {
+		if (Objects.nonNull(selector)) {
+			selector.close();
+		}
+		super.finalize();
 	}
 
 }

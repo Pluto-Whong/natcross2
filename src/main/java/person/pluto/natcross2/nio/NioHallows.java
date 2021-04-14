@@ -40,7 +40,7 @@ public final class NioHallows implements Runnable {
 	private volatile Thread myThread = null;
 
 	private volatile Selector selector;
-	private Object selectorLock = new Object();
+	private final Object selectorLock = new Object();
 
 	private Map<SelectableChannel, ProcesserHolder> chanelProcesserMap = new ConcurrentHashMap<>();
 
@@ -160,14 +160,25 @@ public final class NioHallows implements Runnable {
 		this.alive = false;
 
 		if (selector != null) {
-			selector.wakeup();
-			selector = null;
+			try {
+				selector.wakeup();
+				selector.close();
+				selector = null;
+			} catch (IOException e) {
+			}
 		}
 
 		if (myThread != null) {
 			myThread.interrupt();
 			myThread = null;
 		}
+	}
+
+	protected void finalize() throws Throwable {
+		if (Objects.nonNull(selector)) {
+			selector.close();
+		}
+		super.finalize();
 	}
 
 }
