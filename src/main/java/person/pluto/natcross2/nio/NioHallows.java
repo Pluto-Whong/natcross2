@@ -174,11 +174,4 @@ public final class NioHallows implements Runnable {
 		}
 	}
 
-	protected void finalize() throws Throwable {
-		if (Objects.nonNull(selector)) {
-			selector.close();
-		}
-		super.finalize();
-	}
-
 }
