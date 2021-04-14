@@ -30,106 +30,109 @@ import person.pluto.natcross2.utils.AESUtil;
 @EqualsAndHashCode(callSuper = false)
 public class SecretInteractiveChannel extends SocketChannel<InteractiveModel, InteractiveModel> {
 
-    @Exclude
-    @Setter(AccessLevel.NONE)
-    @Getter(AccessLevel.NONE)
-    private JsonChannel channel;
+	@Exclude
+	@Setter(AccessLevel.NONE)
+	@Getter(AccessLevel.NONE)
+	private JsonChannel channel;
 
-    /**
-     * 签名混淆key
-     */
-    private String tokenKey;
-    /**
-     * aes密钥
-     */
-    private Key aesKey;
-    /**
-     * 超时时间，毫秒
-     */
-    private Long overtimeMills = 5000L;
+	/**
+	 * 签名混淆key
+	 */
+	private String tokenKey;
+	/**
+	 * aes密钥
+	 */
+	private Key aesKey;
+	/**
+	 * 超时时间，毫秒
+	 */
+	private Long overtimeMills = 5000L;
 
-    public SecretInteractiveChannel() {
-        this.channel = new JsonChannel();
-    }
+	public SecretInteractiveChannel() {
+		this.channel = new JsonChannel();
+	}
 
-    public SecretInteractiveChannel(Socket socket) throws IOException {
-        this.channel = new JsonChannel(socket);
-    }
+	public SecretInteractiveChannel(Socket socket) throws IOException {
+		this.channel = new JsonChannel(socket);
+	}
 
-    @Override
-    public InteractiveModel read() throws Exception {
-        JSONObject read = channel.read();
-        SecretInteractiveModel secretInteractiveModel = read.toJavaObject(SecretInteractiveModel.class);
-        if (Math.abs(System.currentTimeMillis() - secretInteractiveModel.getTimestamp()) > overtimeMills) {
-            throw new IllegalStateException("超时");
-        }
-        boolean checkAutograph = secretInteractiveModel.checkAutograph(tokenKey);
-        if (!checkAutograph) {
-            throw new IllegalStateException("签名错误");
-        }
-        secretInteractiveModel.decryptMsg(aesKey);
-        return secretInteractiveModel;
-    }
+	@Override
+	public InteractiveModel read() throws Exception {
+		JSONObject read = channel.read();
+		SecretInteractiveModel secretInteractiveModel = read.toJavaObject(SecretInteractiveModel.class);
+		if (Math.abs(System.currentTimeMillis() - secretInteractiveModel.getTimestamp()) > overtimeMills) {
+			throw new IllegalStateException("超时");
+		}
+		boolean checkAutograph = secretInteractiveModel.checkAutograph(tokenKey);
+		if (!checkAutograph) {
+			throw new IllegalStateException("签名错误");
+		}
+		secretInteractiveModel.decryptMsg(aesKey);
+		return secretInteractiveModel;
+	}
 
-    @Override
-    public void write(InteractiveModel value) throws Exception {
-        SecretInteractiveModel secretInteractiveModel = new SecretInteractiveModel(value);
-        secretInteractiveModel.setCharset(this.getCharset().name());
-        secretInteractiveModel.fullMessage(aesKey, tokenKey);
-        channel.write(secretInteractiveModel);
-    }
+	private Object valueConvert(InteractiveModel value) throws Exception {
+		SecretInteractiveModel secretInteractiveModel = new SecretInteractiveModel(value);
+		secretInteractiveModel.setCharset(this.getCharset().name());
+		secretInteractiveModel.fullMessage(aesKey, tokenKey);
+		return secretInteractiveModel;
+	}
 
-    @Override
-    public void flush() throws Exception {
-        channel.flush();
-    }
+	@Override
+	public void write(InteractiveModel value) throws Exception {
+		channel.write(valueConvert(value));
+	}
 
-    @Override
-    public void writeAndFlush(InteractiveModel value) throws Exception {
-        this.write(value);
-        this.flush();
-    }
+	@Override
+	public void flush() throws Exception {
+		channel.flush();
+	}
 
-    /**
-     * 获取charset
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:18:58
-     * @return
-     */
-    public Charset getCharset() {
-        return channel.getCharset();
-    }
+	@Override
+	public void writeAndFlush(InteractiveModel value) throws Exception {
+		channel.writeAndFlush(valueConvert(value));
+	}
 
-    @Override
-    public void setCharset(Charset charset) {
-        channel.setCharset(charset);
-    }
+	/**
+	 * 获取charset
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 16:18:58
+	 * @return
+	 */
+	public Charset getCharset() {
+		return channel.getCharset();
+	}
 
-    @Override
-    public Socket getSocket() {
-        return channel.getSocket();
-    }
+	@Override
+	public void setCharset(Charset charset) {
+		channel.setCharset(charset);
+	}
 
-    @Override
-    public void setSocket(Socket socket) throws IOException {
-        channel.setSocket(socket);
-    }
+	@Override
+	public Socket getSocket() {
+		return channel.getSocket();
+	}
 
-    @Override
-    public void closeSocket() throws IOException {
-        channel.closeSocket();
-    }
+	@Override
+	public void setSocket(Socket socket) throws IOException {
+		channel.setSocket(socket);
+	}
 
-    /**
-     * 使用base64格式设置aes密钥
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:19:07
-     * @param aesKey
-     */
-    public void setBaseAesKey(String aesKey) {
-        this.aesKey = AESUtil.createKeyByBase64(aesKey);
-    }
+	@Override
+	public void closeSocket() throws IOException {
+		channel.closeSocket();
+	}
+
+	/**
+	 * 使用base64格式设置aes密钥
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 16:19:07
+	 * @param aesKey
+	 */
+	public void setBaseAesKey(String aesKey) {
+		this.aesKey = AESUtil.createKeyByBase64(aesKey);
+	}
 
 }

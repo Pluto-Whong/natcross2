@@ -16,69 +16,72 @@ import java.nio.charset.StandardCharsets;
  */
 public class StringChannel extends SocketChannel<String, String> {
 
-    private LengthChannel channel;
+	private LengthChannel channel;
 
-    private Charset charset = StandardCharsets.UTF_8;
+	private Charset charset = StandardCharsets.UTF_8;
 
-    public StringChannel() {
-        channel = new LengthChannel();
-    }
+	public StringChannel() {
+		channel = new LengthChannel();
+	}
 
-    public StringChannel(Socket socket) throws IOException {
-        this.channel = new LengthChannel(socket);
-    }
+	public StringChannel(Socket socket) throws IOException {
+		this.channel = new LengthChannel(socket);
+	}
 
-    @Override
-    public String read() throws Exception {
-        byte[] read = channel.read();
-        return new String(read, charset);
-    }
+	@Override
+	public String read() throws Exception {
+		byte[] read = channel.read();
+		return new String(read, charset);
+	}
 
-    @Override
-    public void write(String value) throws Exception {
-        channel.write(value.getBytes(charset));
-    }
+	private byte[] valueConvert(String value) {
+		return value.getBytes(charset);
+	}
 
-    @Override
-    public void flush() throws Exception {
-        channel.flush();
-    }
+	@Override
+	public void write(String value) throws Exception {
+		channel.write(valueConvert(value));
+	}
 
-    @Override
-    public void writeAndFlush(String value) throws Exception {
-        this.write(value);
-        this.flush();
-    }
+	@Override
+	public void flush() throws Exception {
+		channel.flush();
+	}
 
-    /**
-     * 获取charset
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:22:06
-     * @return
-     */
-    public Charset getCharset() {
-        return charset;
-    }
+	@Override
+	public void writeAndFlush(String value) throws Exception {
+		channel.writeAndFlush(valueConvert(value));
+	}
 
-    @Override
-    public void setCharset(Charset charset) {
-        this.charset = charset;
-    }
+	/**
+	 * 获取charset
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 16:22:06
+	 * @return
+	 */
+	public Charset getCharset() {
+		return charset;
+	}
 
-    @Override
-    public Socket getSocket() {
-        return channel.getSocket();
-    }
+	@Override
+	public void setCharset(Charset charset) {
+		this.charset = charset;
+	}
 
-    @Override
-    public void setSocket(Socket socket) throws IOException {
-        channel.setSocket(socket);
-    }
+	@Override
+	public Socket getSocket() {
+		return channel.getSocket();
+	}
 
-    @Override
-    public void closeSocket() throws IOException {
-        channel.closeSocket();
-    }
+	@Override
+	public void setSocket(Socket socket) throws IOException {
+		channel.setSocket(socket);
+	}
+
+	@Override
+	public void closeSocket() throws IOException {
+		channel.closeSocket();
+	}
 
 }
