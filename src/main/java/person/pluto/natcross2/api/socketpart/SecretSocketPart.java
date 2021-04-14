@@ -124,5 +124,10 @@ public class SecretSocketPart extends AbsSocketPart implements IBelongControl {
 		}
 		belongThread = null;
 	}
+	
+	@Override
+	public void noticeStop() {
+		this.stop();
+	}
 
 }

@@ -118,7 +118,12 @@ public class SimplePassway implements Runnable, INioProcesser {
 
 	private ByteBuffer obtainByteBuffer() {
 		if (Objects.isNull(byteBuffer)) {
-			byteBuffer = ByteBuffer.allocate(streamCacheSize);
+			if (Objects.isNull(this.getSocketChannel())) {
+				byteBuffer = ByteBuffer.allocate(streamCacheSize);
+			} else {
+				// 输入输出可以使用channel，此处则使用DirectByteBuffer，这时候才真正体现出了DMA
+				byteBuffer = ByteBuffer.allocateDirect(streamCacheSize);
+			}
 		}
 		return byteBuffer;
 	}
@@ -127,6 +132,7 @@ public class SimplePassway implements Runnable, INioProcesser {
 	public void proccess(SelectionKey key) {
 		if (alive && key.isValid()) {
 			ByteBuffer buffer = this.obtainByteBuffer();
+
 			SocketChannel inputChannel = (SocketChannel) key.channel();
 			try {
 				int len = -1;

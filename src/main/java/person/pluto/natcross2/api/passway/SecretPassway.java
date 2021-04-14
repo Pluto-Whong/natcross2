@@ -5,20 +5,15 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.Objects;
 
-import lombok.AccessLevel;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.api.IBelongControl;
 import person.pluto.natcross2.api.secret.ISecret;
 import person.pluto.natcross2.channel.LengthChannel;
 import person.pluto.natcross2.executor.NatcrossExecutor;
-import person.pluto.natcross2.nio.INioProcesser;
 import person.pluto.natcross2.nio.NioHallows;
 
 /**
@@ -32,7 +27,7 @@ import person.pluto.natcross2.nio.NioHallows;
  */
 @Data
 @Slf4j
-public class SecretPassway implements Runnable, INioProcesser {
+public class SecretPassway implements Runnable {
 
 	public static enum Mode {
 		// 从无加密接受到加密输出
@@ -63,9 +58,9 @@ public class SecretPassway implements Runnable, INioProcesser {
 				secretToNo();
 			}
 		} catch (Exception e) {
-			log.debug("one InputToOutputThread closed");
+			//
 		}
-
+		log.debug("one InputToOutputThread closed");
 		// 传输完成后退出
 		this.cancell();
 	}
@@ -78,41 +73,27 @@ public class SecretPassway implements Runnable, INioProcesser {
 	 * @throws Exception
 	 */
 	private void secretToNo() throws Exception {
-		try (LengthChannel recvChannel = new LengthChannel(recvSocket);
-				OutputStream outputStream = sendSocket.getOutputStream();
-				SocketChannel outputChannel = sendSocket.getChannel()) {
-			while (alive) {
-				byte[] read = recvChannel.read();
-				if (read == null || read.length < 1) {
-					break;
-				}
+		@SuppressWarnings("resource")
+		LengthChannel recvChannel = new LengthChannel(recvSocket);
 
-				byte[] decrypt = secret.decrypt(read);
+		OutputStream outputStream = sendSocket.getOutputStream();
+		SocketChannel outputChannel = sendSocket.getChannel();
 
-				if (Objects.isNull(outputChannel)) {
-					outputStream.write(decrypt);
-					outputStream.flush();
-				} else {
-					outputChannel.write(ByteBuffer.wrap(decrypt));
-				}
+		while (alive) {
+			byte[] read = recvChannel.read();
+			if (read == null || read.length < 1) {
+				break;
+			}
+
+			byte[] decrypt = secret.decrypt(read);
+
+			if (Objects.isNull(outputChannel)) {
+				outputStream.write(decrypt);
+				outputStream.flush();
+			} else {
+				outputChannel.write(ByteBuffer.wrap(decrypt));
 			}
 		}
-	}
-
-	@Setter(AccessLevel.NONE)
-	@Getter(AccessLevel.NONE)
-	private LengthChannel sendChannel;
-
-	private LengthChannel obtainSendChannel() throws IOException {
-		if (Objects.isNull(sendChannel)) {
-			this.sendChannel = new LengthChannel(sendSocket);
-		}
-		return this.sendChannel;
-	}
-
-	private void sendWriteAndFlush(byte[] arrayTemp, int offset, int len) throws Exception {
-		byte[] encrypt = secret.encrypt(arrayTemp, offset, len);
-		obtainSendChannel().writeAndFlush(encrypt);
 	}
 
 	/**
@@ -123,63 +104,18 @@ public class SecretPassway implements Runnable, INioProcesser {
 	 * @throws Exception
 	 */
 	private void noToSecret() throws Exception {
-		try (InputStream inputStream = recvSocket.getInputStream();
-				LengthChannel sendChannel = new LengthChannel(sendSocket)) {
-			int len = -1;
-			byte[] arrayTemp = new byte[streamCacheSize];
+		InputStream inputStream = recvSocket.getInputStream();
 
-			while (alive && (len = inputStream.read(arrayTemp)) > 0) {
-				this.sendWriteAndFlush(arrayTemp, 0, len);
-			}
+		@SuppressWarnings("resource")
+		LengthChannel sendChannel = new LengthChannel(sendSocket);
+
+		int len = -1;
+		byte[] arrayTemp = new byte[streamCacheSize];
+
+		while (alive && (len = inputStream.read(arrayTemp)) > 0) {
+			byte[] encrypt = secret.encrypt(arrayTemp, 0, len);
+			sendChannel.writeAndFlush(encrypt);
 		}
-	}
-
-	// ====================== nio =========================
-	@Setter(AccessLevel.NONE)
-	@Getter(AccessLevel.NONE)
-	private ByteBuffer byteBuffer;
-
-	private ByteBuffer obtainByteBuffer() {
-		if (Objects.isNull(byteBuffer)) {
-			byteBuffer = ByteBuffer.allocate(streamCacheSize);
-		}
-		return byteBuffer;
-	}
-
-	@Override
-	public void proccess(SelectionKey key) {
-		if (key.isValid()) {
-			ByteBuffer buffer = this.obtainByteBuffer();
-
-			SocketChannel inputChannel = (SocketChannel) key.channel();
-			try {
-				int len = -1;
-				do {
-					buffer.clear();
-
-					len = inputChannel.read(buffer);
-
-					if (len > 0) {
-						buffer.flip();
-						if (buffer.hasRemaining()) {
-							this.sendWriteAndFlush(buffer.array(), buffer.position(), buffer.limit());
-						}
-					}
-
-				} while (len > 0);
-
-				// 如果不是负数，则还没有断开连接，返回继续等待
-				if (len >= 0) {
-					return;
-				}
-			} catch (Exception e) {
-				//
-			}
-		}
-
-		log.debug("one InputToOutputThread closed");
-
-		this.cancell();
 	}
 
 	/**
@@ -230,16 +166,7 @@ public class SecretPassway implements Runnable, INioProcesser {
 		if (!this.alive) {
 			this.alive = true;
 
-			if (!Mode.noToSecret.equals(mode) || Objects.isNull(recvSocket.getChannel())) {
-				NatcrossExecutor.executePassway(this);
-			} else {
-				try {
-					NioHallows.register(recvSocket.getChannel(), SelectionKey.OP_READ, this);
-				} catch (IOException e) {
-					this.cancell();
-					return;
-				}
-			}
+			NatcrossExecutor.executePassway(this);
 		}
 	}
 

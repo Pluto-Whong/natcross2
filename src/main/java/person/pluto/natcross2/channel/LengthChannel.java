@@ -47,15 +47,27 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
 
 			InputStream is = getInputSteam();
 
+			int len;
 			for (; offset < lenBytes.length;) {
-				offset += is.read(lenBytes, offset, lenBytes.length - offset);
+				len = is.read(lenBytes, offset, lenBytes.length - offset);
+				if (len < 0) {
+					// 如果-1，提前关闭了，又没有获得足够的数据，那么就抛出异常
+					throw new IOException("Insufficient byte length when io closed");
+				}
+				offset += len;
 			}
+
 			int length = Tools.bytes2int(lenBytes);
 
 			offset = 0;
 			byte[] b = new byte[length];
 			for (; offset < length;) {
-				offset += is.read(b, offset, length - offset);
+				len = is.read(b, offset, length - offset);
+				if (len < 0) {
+					// 如果-1，提前关闭了，又没有获得足够的数据，那么就抛出异常
+					throw new IOException("Insufficient byte length when io closed");
+				}
+				offset += len;
 			}
 			return b;
 		} finally {
