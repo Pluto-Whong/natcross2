@@ -56,7 +56,6 @@ public class SecretPassway implements Runnable, INioProcesser {
 
 	@Override
 	public void run() {
-
 		try {
 			if (Mode.noToSecret.equals(mode)) {
 				noToSecret();
@@ -149,35 +148,33 @@ public class SecretPassway implements Runnable, INioProcesser {
 
 	@Override
 	public void proccess(SelectionKey key) {
-		ByteBuffer buffer = this.obtainByteBuffer();
+		if (key.isValid()) {
+			ByteBuffer buffer = this.obtainByteBuffer();
 
-		SocketChannel inputChannel = (SocketChannel) key.channel();
-		try {
-			if (!key.isReadable()) {
-				return;
-			}
+			SocketChannel inputChannel = (SocketChannel) key.channel();
+			try {
+				int len = -1;
+				do {
+					buffer.clear();
 
-			int len = -1;
-			do {
-				buffer.clear();
+					len = inputChannel.read(buffer);
 
-				len = inputChannel.read(buffer);
-
-				if (len > 0) {
-					buffer.flip();
-					if (buffer.hasRemaining()) {
-						this.sendWriteAndFlush(buffer.array(), buffer.position(), buffer.limit());
+					if (len > 0) {
+						buffer.flip();
+						if (buffer.hasRemaining()) {
+							this.sendWriteAndFlush(buffer.array(), buffer.position(), buffer.limit());
+						}
 					}
+
+				} while (len > 0);
+
+				// 如果不是负数，则还没有断开连接，返回继续等待
+				if (len >= 0) {
+					return;
 				}
-
-			} while (len > 0);
-
-			// 如果不是负数，则还没有断开连接，返回继续等待
-			if (len >= 0) {
-				return;
+			} catch (Exception e) {
+				//
 			}
-		} catch (Exception e) {
-			//
 		}
 
 		log.debug("one InputToOutputThread closed");

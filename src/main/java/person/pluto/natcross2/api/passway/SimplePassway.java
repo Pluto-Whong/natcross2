@@ -125,35 +125,32 @@ public class SimplePassway implements Runnable, INioProcesser {
 
 	@Override
 	public void proccess(SelectionKey key) {
-		ByteBuffer buffer = this.obtainByteBuffer();
+		if (alive && key.isValid()) {
+			ByteBuffer buffer = this.obtainByteBuffer();
+			SocketChannel inputChannel = (SocketChannel) key.channel();
+			try {
+				int len = -1;
+				do {
+					buffer.clear();
 
-		SocketChannel inputChannel = (SocketChannel) key.channel();
-		try {
-			if (!key.isReadable()) {
-				return;
-			}
+					len = inputChannel.read(buffer);
 
-			int len = -1;
-			do {
-				buffer.clear();
-
-				len = inputChannel.read(buffer);
-
-				if (len > 0) {
-					buffer.flip();
-					if (buffer.hasRemaining()) {
-						this.write(buffer);
+					if (len > 0) {
+						buffer.flip();
+						if (buffer.hasRemaining()) {
+							this.write(buffer);
+						}
 					}
+
+				} while (len > 0);
+
+				// 如果不是负数，则还没有断开连接，返回继续等待
+				if (len >= 0) {
+					return;
 				}
-
-			} while (len > 0);
-
-			// 如果不是负数，则还没有断开连接，返回继续等待
-			if (len >= 0) {
-				return;
+			} catch (IOException e) {
+				//
 			}
-		} catch (IOException e) {
-			//
 		}
 
 		log.debug("one InputToOutputThread closed");

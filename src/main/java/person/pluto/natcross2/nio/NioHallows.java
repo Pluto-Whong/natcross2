@@ -14,6 +14,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.executor.NatcrossExecutor;
+import person.pluto.natcross2.utils.CountWaitLatch;
 
 /**
  * <p>
@@ -48,9 +49,11 @@ public final class NioHallows implements Runnable {
 	private long selectTimeout = 100L;
 	@Setter
 	@Getter
-	private long wakeupSleepNanos = 1000L;
+	private long wakeupSleepNanos = 1000000L;
 
-	private boolean alive;
+	private boolean alive = false;
+
+	private CountWaitLatch countWaitLatch = new CountWaitLatch();
 
 	public Selector getSelector() throws IOException {
 		if (Objects.isNull(selector)) {
@@ -75,11 +78,15 @@ public final class NioHallows implements Runnable {
 		try {
 			chanelProcesserMap.put(channel, ProcesserHolder.of(channel, ops, proccesser));
 			channel.configureBlocking(false);
+
+			countWaitLatch.countUp();
 			// 这里有个坑点，如果在select中，这里会被阻塞
 			channel.register(getWakeupSelector(), ops);
 		} catch (Throwable e) {
 			chanelProcesserMap.remove(channel);
 			throw e;
+		} finally {
+			countWaitLatch.countDown();
 		}
 	}
 
@@ -88,6 +95,12 @@ public final class NioHallows implements Runnable {
 			return;
 		}
 		chanelProcesserMap.remove(channel);
+
+		SelectionKey key = channel.keyFor(selector);
+
+		if (Objects.nonNull(key)) {
+			key.cancel();
+		}
 	}
 
 	@Override
@@ -97,27 +110,25 @@ public final class NioHallows implements Runnable {
 				// 采用有期限的监听，以免线程太快，没有来的及注册，就永远阻塞在那里了
 				int select = getSelector().select(this.getSelectTimeout());
 				if (select <= 0) {
-					Iterator<SelectionKey> iterator = getSelector().selectedKeys().iterator();
-					for (; iterator.hasNext();) {
-						iterator.remove();
+					// 给注册事务一个时间，如果等待时间太长（可能需要注入的太多），就跳出再去获取新事件，防止饿死
+					try {
+						countWaitLatch.await(wakeupSleepNanos, TimeUnit.NANOSECONDS);
+					} catch (InterruptedException e) {
+						log.warn("selector wait register timeout");
 					}
-					// 稍微休息下，给注册事务一个时间
-					TimeUnit.NANOSECONDS.sleep(wakeupSleepNanos);
 					continue;
 				}
 
 				Iterator<SelectionKey> iterator = getSelector().selectedKeys().iterator();
 				for (; iterator.hasNext();) {
 					SelectionKey key = iterator.next();
+					iterator.remove();
+					key.interestOps(0);
 
 					ProcesserHolder processerHolder = chanelProcesserMap.get(key.channel());
 					if (Objects.isNull(processerHolder)) {
-						key.interestOps(0);
-						iterator.remove();
+						key.cancel();
 						continue;
-					} else {
-						key.interestOps(key.interestOps() & ~processerHolder.getInterestOps());
-						iterator.remove();
 					}
 
 					NatcrossExecutor.executeNioAction(() -> {
@@ -125,7 +136,7 @@ public final class NioHallows implements Runnable {
 					});
 				}
 
-			} catch (IOException | InterruptedException e) {
+			} catch (IOException e) {
 				log.error("NioHallows run exception", e);
 			}
 		}

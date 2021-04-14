@@ -1,11 +1,8 @@
 package person.pluto.natcross2.serverside.listen.config;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.spi.SelectorProvider;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -57,10 +54,10 @@ public class SimpleListenServerConfig implements IListenServerConfig {
 	@Override
 	public ServerSocket createServerSocket() throws Exception {
 		if (createServerSocket == null) {
-			ServerSocketChannel openServerSocketChannel = SelectorProvider.provider().openServerSocketChannel();
-			openServerSocketChannel.bind(new InetSocketAddress(this.getListenPort()));
-			return openServerSocketChannel.socket();
-//			return new ServerSocket(this.getListenPort());
+//			ServerSocketChannel openServerSocketChannel = SelectorProvider.provider().openServerSocketChannel();
+//			openServerSocketChannel.bind(new InetSocketAddress(this.getListenPort()));
+//			return openServerSocketChannel.socket();
+			return new ServerSocket(this.getListenPort());
 		} else {
 			return createServerSocket.createServerSocket(this.getListenPort());
 		}

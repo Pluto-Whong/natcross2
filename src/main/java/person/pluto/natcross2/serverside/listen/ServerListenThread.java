@@ -4,10 +4,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -20,9 +18,12 @@ import person.pluto.natcross2.api.IBelongControl;
 import person.pluto.natcross2.api.socketpart.AbsSocketPart;
 import person.pluto.natcross2.common.CommonFormat;
 import person.pluto.natcross2.executor.NatcrossExecutor;
+import person.pluto.natcross2.nio.INioProcesser;
+import person.pluto.natcross2.nio.NioHallows;
 import person.pluto.natcross2.serverside.listen.clear.IClearInvalidSocketPartThread;
 import person.pluto.natcross2.serverside.listen.config.IListenServerConfig;
 import person.pluto.natcross2.serverside.listen.control.IControlSocket;
+import person.pluto.natcross2.utils.Assert;
 
 /**
  * <p>
@@ -33,13 +34,14 @@ import person.pluto.natcross2.serverside.listen.control.IControlSocket;
  * @since 2019-07-05 10:53:33
  */
 @Slf4j
-public final class ServerListenThread implements Runnable, IBelongControl {
+public final class ServerListenThread implements Runnable, INioProcesser, IBelongControl {
 
 	private Thread myThread = null;
 
 	private IListenServerConfig config;
 
 	private boolean isAlive = false;
+	private boolean canceled = false;
 	private ServerSocket listenServerSocket;
 
 	private Map<String, AbsSocketPart> socketPartMap = new ConcurrentHashMap<>();
@@ -58,49 +60,30 @@ public final class ServerListenThread implements Runnable, IBelongControl {
 
 	@Override
 	public void run() {
-		Selector selector = null;
-
-		ServerSocketChannel channel = listenServerSocket.getChannel();
-
-		if (Objects.nonNull(channel)) {
-			try {
-				selector = Selector.open();
-
-				channel.configureBlocking(false);
-				channel.register(selector, SelectionKey.OP_ACCEPT);
-			} catch (IOException e) {
-				channel = null;
-			}
-		}
-
 		while (isAlive) {
 			try {
-				if (Objects.isNull(selector)) {
-					Socket listenSocket = listenServerSocket.accept();
-					procMethod(listenSocket);
-				} else {
-					int select = selector.select();
-					if (select <= 0) {
-						continue;
-					}
-
-					Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
-
-					for (; iterator.hasNext();) {
-						SelectionKey key = iterator.next();
-						iterator.remove();
-
-						if (!key.isValid() || !key.isAcceptable()) {
-							continue;
-						}
-						SocketChannel accept = channel.accept();
-						procMethod(accept.socket());
-					}
-				}
+				Socket listenSocket = listenServerSocket.accept();
+				procMethod(listenSocket);
 			} catch (Exception e) {
-				log.warn("监听服务[" + this.getListenPort() + "]发送通知服务异常", e);
-				stopListen();
+				log.warn("监听服务[" + this.getListenPort() + "]服务异常", e);
+				this.cancel();
 			}
+		}
+	}
+
+	@Override
+	public void proccess(SelectionKey key) {
+		if (!key.isValid()) {
+			this.cancel();
+		}
+
+		try {
+			ServerSocketChannel channel = (ServerSocketChannel) key.channel();
+			SocketChannel accept = channel.accept();
+			procMethod(accept.socket());
+		} catch (IOException e) {
+			log.warn("监听服务[" + this.getListenPort() + "]服务异常", e);
+			this.cancel();
 		}
 	}
 
@@ -165,26 +148,44 @@ public final class ServerListenThread implements Runnable, IBelongControl {
 	 ** 启动
 	 *
 	 * @author Pluto
+	 * @throws Exception
 	 * @since 2020-01-07 09:36:30
 	 */
 	public void start() {
-		log.info("server listen port[{}] starting ...", this.getListenPort());
+		Assert.state(this.canceled == false, "已退出，不得重新启动");
+
 		this.isAlive = true;
-		if (myThread == null || !myThread.isAlive()) {
 
-			if (this.clearInvalidSocketPartThread == null) {
-				this.clearInvalidSocketPartThread = config.newClearInvalidSocketPartThread(this);
-				if (this.clearInvalidSocketPartThread != null) {
-					this.clearInvalidSocketPartThread.start();
-				}
+		log.info("server listen port[{}] starting ...", this.getListenPort());
+
+		if (this.clearInvalidSocketPartThread == null) {
+			this.clearInvalidSocketPartThread = config.newClearInvalidSocketPartThread(this);
+			if (this.clearInvalidSocketPartThread != null) {
+				this.clearInvalidSocketPartThread.start();
 			}
-
-			myThread = new Thread(this);
-			myThread.setName("server-listen-" + this.formatInfo());
-			myThread.start();
 		}
-		log.info("server listen port[{}] is started!", this.getListenPort());
 
+		ServerSocketChannel channel = listenServerSocket.getChannel();
+		if (Objects.nonNull(channel)) {
+			if (!channel.isRegistered() || (channel.validOps() & SelectionKey.OP_ACCEPT) == 0) {
+				try {
+					NioHallows.register(channel, SelectionKey.OP_ACCEPT, this);
+				} catch (IOException e) {
+					log.error("register serverListen channel[{}] faild!", config.getListenPort());
+					this.cancel();
+					throw new RuntimeException("nio注册时异常", e);
+				}
+
+			}
+		} else {
+			if (myThread == null || !myThread.isAlive()) {
+				myThread = new Thread(this);
+				myThread.setName("server-listen-" + this.formatInfo());
+				myThread.start();
+			}
+		}
+
+		log.info("server listen port[{}] start success!", this.getListenPort());
 	}
 
 	/**
@@ -219,7 +220,14 @@ public final class ServerListenThread implements Runnable, IBelongControl {
 	 * @since 2020-01-07 09:37:00
 	 */
 	public void cancel() {
-		log.info("cancelling[{}]", this.getListenPort());
+		if (this.canceled) {
+			return;
+		}
+		this.canceled = true;
+
+		ListenServerControl.remove(this.getListenPort());
+
+		log.info("serverListen cancelling[{}]", this.getListenPort());
 
 		this.stopListen();
 
@@ -229,6 +237,7 @@ public final class ServerListenThread implements Runnable, IBelongControl {
 			} catch (Exception e) {
 				// do no thing
 			}
+			listenServerSocket = null;
 		}
 
 		if (this.clearInvalidSocketPartThread != null) {
@@ -247,7 +256,7 @@ public final class ServerListenThread implements Runnable, IBelongControl {
 			stopSocketPart(key);
 		}
 
-		log.debug("cancel[{}] is success", this.getListenPort());
+		log.debug("serverListen cancel[{}] is success", this.getListenPort());
 	}
 
 	/**
@@ -387,8 +396,19 @@ public final class ServerListenThread implements Runnable, IBelongControl {
 	 * @since 2020-01-07 09:43:28
 	 * @return
 	 */
-	public Boolean isAlive() {
+	public boolean isAlive() {
 		return isAlive;
+	}
+
+	/**
+	 * 是否已退出
+	 *
+	 * @return
+	 * @author Pluto
+	 * @since 2021-04-13 13:39:11
+	 */
+	public boolean isCanceled() {
+		return canceled;
 	}
 
 	/**
