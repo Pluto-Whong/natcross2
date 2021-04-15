@@ -1,5 +1,7 @@
 package person.pluto.natcross2.executor;
 
+import java.util.Objects;
+
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -19,6 +21,10 @@ public final class NatcrossExecutor {
 
 	private static volatile IExecutor INSTANCE = new SimpleExecutor();
 
+	public static void shutdown() {
+		INSTANCE.shutdown();
+	}
+
 	/**
 	 * 重设执行器
 	 *
@@ -27,6 +33,13 @@ public final class NatcrossExecutor {
 	 * @since 2021-04-08 14:59:04
 	 */
 	public static void resetExecutor(IExecutor executor) {
+		if (Objects.nonNull(INSTANCE)) {
+			try {
+				INSTANCE.shutdown();
+			} catch (Exception e) {
+				//
+			}
+		}
 		INSTANCE = executor;
 	}
 

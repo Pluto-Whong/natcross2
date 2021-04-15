@@ -10,7 +10,9 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.executor.NatcrossExecutor;
@@ -25,6 +27,7 @@ import person.pluto.natcross2.utils.CountWaitLatch;
  * @since 2021-04-13 09:25:51
  */
 @Slf4j
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class NioHallows implements Runnable {
 
 	public static final NioHallows INSTANCE = new NioHallows();
@@ -161,7 +164,6 @@ public final class NioHallows implements Runnable {
 
 		if (selector != null) {
 			try {
-				selector.wakeup();
 				selector.close();
 				selector = null;
 			} catch (IOException e) {

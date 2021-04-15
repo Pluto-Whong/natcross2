@@ -12,6 +12,15 @@ package person.pluto.natcross2.executor;
 public interface IExecutor {
 
 	/**
+	 * 关闭
+	 *
+	 * @throws Exception
+	 * @author Pluto
+	 * @since 2021-04-15 10:27:42
+	 */
+	public void shutdown();
+
+	/**
 	 * 默认执行方法
 	 *
 	 * @param runnable

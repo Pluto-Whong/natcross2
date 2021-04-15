@@ -15,8 +15,14 @@ public class SimpleExecutor implements IExecutor {
 
 	private ExecutorService executor = Executors.newCachedThreadPool();
 
+	@Override
 	public void execute(Runnable runnable) {
 		executor.execute(runnable);
+	}
+
+	@Override
+	public void shutdown() {
+		executor.shutdownNow();
 	}
 
 }
