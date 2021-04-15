@@ -5,3 +5,4 @@ VERSION 2.2
 4. passWay使用了nio策略，统一交付NioHallows处理
 5. ServerListenThread（当前长连接存在问题，故而目前使用bio形式获取）、ClientServiceThread使用了nio策略，统一交付NioHallows处理
 6. 增加了CountWaitLatch（对标CountDownLatch，但增加的countUp，不再依赖初始化数量），用于NioHallows的等待注册过程
+7. 修改pom.xml，去除无用的包，改为dependencyManagement方式进行版本管理，避免和引入项目发生版本冲突
