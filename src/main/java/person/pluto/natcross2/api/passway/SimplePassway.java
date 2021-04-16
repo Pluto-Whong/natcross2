@@ -58,7 +58,7 @@ public class SimplePassway implements Runnable, INioProcesser {
 		return this.outputStream;
 	}
 
-	private SocketChannel getSocketChannel() {
+	private SocketChannel getOutputChannel() {
 		if (Objects.isNull(this.outputChannel)) {
 			this.outputChannel = sendSocket.getChannel();
 		}
@@ -81,8 +81,8 @@ public class SimplePassway implements Runnable, INioProcesser {
 	 * @since 2021-04-09 16:37:33
 	 */
 	private void write(ByteBuffer byteBuffer) throws IOException {
-		if (Objects.nonNull(this.getSocketChannel())) {
-			this.getSocketChannel().write(byteBuffer);
+		if (Objects.nonNull(this.getOutputChannel())) {
+			this.getOutputChannel().write(byteBuffer);
 		} else {
 			this.getOutputStream().write(byteBuffer.array(), byteBuffer.position(), byteBuffer.limit());
 			this.getOutputStream().flush();
@@ -118,7 +118,7 @@ public class SimplePassway implements Runnable, INioProcesser {
 
 	private ByteBuffer obtainByteBuffer() {
 		if (Objects.isNull(byteBuffer)) {
-			if (Objects.isNull(this.getSocketChannel())) {
+			if (Objects.isNull(this.getOutputChannel())) {
 				byteBuffer = ByteBuffer.allocate(streamCacheSize);
 			} else {
 				// 输入输出可以使用channel，此处则使用DirectByteBuffer，这时候才真正体现出了DMA
