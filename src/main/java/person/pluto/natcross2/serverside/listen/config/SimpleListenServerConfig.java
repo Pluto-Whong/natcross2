@@ -53,13 +53,13 @@ public class SimpleListenServerConfig implements IListenServerConfig {
 
 	@Override
 	public ServerSocket createServerSocket() throws Exception {
-		if (createServerSocket == null) {
+		if (this.createServerSocket == null) {
 //			ServerSocketChannel openServerSocketChannel = SelectorProvider.provider().openServerSocketChannel();
 //			openServerSocketChannel.bind(new InetSocketAddress(this.getListenPort()));
 //			return openServerSocketChannel.socket();
 			return new ServerSocket(this.getListenPort());
 		} else {
-			return createServerSocket.createServerSocket(this.getListenPort());
+			return this.createServerSocket.createServerSocket(this.getListenPort());
 		}
 	}
 

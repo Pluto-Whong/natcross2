@@ -27,8 +27,8 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
 	private InputStream inputStream;
 	private OutputStream outputStream;
 
-	private ReentrantLock readLock = new ReentrantLock(true);
-	private ReentrantLock writerLock = new ReentrantLock(true);
+	private final ReentrantLock readLock = new ReentrantLock(true);
+	private final ReentrantLock writerLock = new ReentrantLock(true);
 
 	private byte[] lenBytes = new byte[4];
 
@@ -41,6 +41,9 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
 
 	@Override
 	public byte[] read() throws Exception {
+		ReentrantLock readLock = this.readLock;
+		byte[] lenBytes = this.lenBytes;
+
 		readLock.lock();
 		try {
 			int offset = 0;
@@ -77,16 +80,17 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
 
 	@Override
 	public void write(byte[] value) throws Exception {
+		ReentrantLock writerLock = this.writerLock;
+
 		writerLock.lock();
 		try {
-			if (Objects.nonNull(this.socketChannel)) {
-				int length = value.length;
-				this.socketChannel.write(ByteBuffer.wrap(Tools.intToBytes(length)));
-				this.socketChannel.write(ByteBuffer.wrap(value));
+			java.nio.channels.SocketChannel socketChannel;
+			if (Objects.nonNull(socketChannel = this.socketChannel)) {
+				socketChannel.write(ByteBuffer.wrap(Tools.intToBytes(value.length)));
+				socketChannel.write(ByteBuffer.wrap(value));
 			} else {
 				OutputStream os = getOutputStream();
-				int length = value.length;
-				os.write(Tools.intToBytes(length));
+				os.write(Tools.intToBytes(value.length));
 				os.write(value);
 			}
 		} finally {
@@ -96,6 +100,8 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
 
 	@Override
 	public void flush() throws Exception {
+		ReentrantLock writerLock = this.writerLock;
+
 		writerLock.lock();
 		try {
 			getOutputStream().flush();
@@ -106,6 +112,8 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
 
 	@Override
 	public void writeAndFlush(byte[] value) throws Exception {
+		ReentrantLock writerLock = this.writerLock;
+
 		writerLock.lock();
 		try {
 			this.write(value);
@@ -117,17 +125,21 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
 
 	@Override
 	public Socket getSocket() {
-		return socket;
+		return this.socket;
 	}
 
 	@Override
 	public void setSocket(Socket socket) throws IOException {
+		if (Objects.nonNull(this.socket)) {
+			throw new UnsupportedOperationException("socket cannot be set repeatedly");
+		}
+
 		this.socket = socket;
 
-		this.socketChannel = this.socket.getChannel();
+		this.socketChannel = socket.getChannel();
 
-		this.inputStream = this.socket.getInputStream();
-		this.outputStream = this.socket.getOutputStream();
+		this.inputStream = socket.getInputStream();
+		this.outputStream = socket.getOutputStream();
 	}
 
 	@Override
@@ -144,10 +156,11 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
 	 * @throws IOException
 	 */
 	private InputStream getInputSteam() throws IOException {
-		if (this.inputStream == null) {
-			this.inputStream = this.socket.getInputStream();
+		InputStream inputStream;
+		if ((inputStream = this.inputStream) == null) {
+			inputStream = this.inputStream = this.socket.getInputStream();
 		}
-		return this.inputStream;
+		return inputStream;
 	}
 
 	/**
@@ -159,10 +172,11 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
 	 * @throws IOException
 	 */
 	private OutputStream getOutputStream() throws IOException {
-		if (this.outputStream == null) {
-			this.outputStream = this.getSocket().getOutputStream();
+		OutputStream outputStream;
+		if ((outputStream = this.outputStream) == null) {
+			outputStream = this.outputStream = this.getSocket().getOutputStream();
 		}
-		return this.outputStream;
+		return outputStream;
 	}
 
 }

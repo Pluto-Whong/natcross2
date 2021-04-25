@@ -1,6 +1,7 @@
 package person.pluto.natcross2.api.socketpart;
 
 import java.io.IOException;
+import java.net.Socket;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -25,7 +26,7 @@ public class SimpleSocketPart extends AbsSocketPart implements IBelongControl {
 
 	@Getter
 	@Setter
-	private int streamCacheSize = 4096;
+	private int streamCacheSize = 8192;
 
 	public SimpleSocketPart(IBelongControl belongThread) {
 		super(belongThread);
@@ -34,11 +35,11 @@ public class SimpleSocketPart extends AbsSocketPart implements IBelongControl {
 	@Override
 	public boolean isValid() {
 		if (super.isValid()) {
-			if (outToInPassway == null || !outToInPassway.isValid() || inToOutPassway == null
-					|| !inToOutPassway.isValid()) {
+			if (this.outToInPassway == null || !this.outToInPassway.isValid() || this.inToOutPassway == null
+					|| !this.inToOutPassway.isValid()) {
 				return false;
 			}
-			return isAlive;
+			return this.isAlive;
 		}
 		return false;
 	}
@@ -51,42 +52,54 @@ public class SimpleSocketPart extends AbsSocketPart implements IBelongControl {
 	 */
 	public void stop() {
 		this.cancel();
-		if (belongThread != null) {
-			belongThread.stopSocketPart(socketPartKey);
+
+		IBelongControl belong;
+		if ((belong = this.belongThread) != null) {
+			this.belongThread = null;
+			belong.stopSocketPart(this.socketPartKey);
 		}
-		belongThread = null;
 	}
 
 	@Override
 	public void cancel() {
-		log.debug("socketPart {} will cancel", this.socketPartKey);
+		if (!this.isAlive) {
+			return;
+		}
 		this.isAlive = false;
-		if (recvSocket != null) {
+
+		log.debug("socketPart {} will cancel", this.socketPartKey);
+
+		Socket recvSocket;
+		if ((recvSocket = this.recvSocket) != null) {
+			this.recvSocket = null;
 			try {
 				recvSocket.close();
 			} catch (IOException e) {
 				log.debug("socketPart [{}] 监听端口 关闭异常", socketPartKey);
 			}
-			recvSocket = null;
 		}
 
-		if (sendSocket != null) {
+		Socket sendSocket;
+		if ((sendSocket = this.sendSocket) != null) {
+			this.sendSocket = null;
 			try {
 				sendSocket.close();
 			} catch (IOException e) {
 				log.debug("socketPart [{}] 发送端口 关闭异常", socketPartKey);
 			}
-			sendSocket = null;
 		}
 
-		if (outToInPassway != null) {
-			outToInPassway.cancell();
-			outToInPassway = null;
+		SimplePassway outToInPassway;
+		if ((outToInPassway = this.outToInPassway) != null) {
+			this.outToInPassway = null;
+			outToInPassway.cancel();
 		}
-		if (inToOutPassway != null) {
-			inToOutPassway.cancell();
-			inToOutPassway = null;
+		SimplePassway inToOutPassway;
+		if ((inToOutPassway = this.inToOutPassway) != null) {
+			this.inToOutPassway = null;
+			inToOutPassway.cancel();
 		}
+
 		log.debug("socketPart {} is cancelled", this.socketPartKey);
 	}
 
@@ -96,17 +109,18 @@ public class SimpleSocketPart extends AbsSocketPart implements IBelongControl {
 			return true;
 		}
 		this.isAlive = true;
+
 		try {
-			outToInPassway = new SimplePassway();
+			SimplePassway outToInPassway = this.outToInPassway = new SimplePassway();
 			outToInPassway.setBelongControl(this);
-			outToInPassway.setRecvSocket(recvSocket);
-			outToInPassway.setSendSocket(sendSocket);
+			outToInPassway.setRecvSocket(this.recvSocket);
+			outToInPassway.setSendSocket(this.sendSocket);
 			outToInPassway.setStreamCacheSize(getStreamCacheSize());
 
-			inToOutPassway = new SimplePassway();
+			SimplePassway inToOutPassway = this.inToOutPassway = new SimplePassway();
 			inToOutPassway.setBelongControl(this);
-			inToOutPassway.setRecvSocket(sendSocket);
-			inToOutPassway.setSendSocket(recvSocket);
+			inToOutPassway.setRecvSocket(this.sendSocket);
+			inToOutPassway.setSendSocket(this.recvSocket);
 			inToOutPassway.setStreamCacheSize(getStreamCacheSize());
 
 			outToInPassway.start();

@@ -26,14 +26,14 @@ import person.pluto.natcross2.serverside.listen.recv.IRecvHandler;
 @Slf4j
 public class ControlSocket implements IControlSocket, Runnable {
 
-	private Thread myThread = null;
-	private boolean isAlive = false;
+	private volatile Thread myThread = null;
+	private volatile boolean isAlive = false;
 
-	protected ServerListenThread serverListenThread;
-
-	protected SocketChannel<? extends InteractiveModel, ? super InteractiveModel> socketChannel;
+	protected final SocketChannel<? extends InteractiveModel, ? super InteractiveModel> socketChannel;
 
 	protected List<IRecvHandler<? super InteractiveModel, ? extends InteractiveModel>> recvHandlerList = new LinkedList<>();
+
+	protected ServerListenThread serverListenThread;
 
 	public ControlSocket(SocketChannel<? extends InteractiveModel, ? super InteractiveModel> socketChannel) {
 		this.socketChannel = socketChannel;
@@ -41,15 +41,17 @@ public class ControlSocket implements IControlSocket, Runnable {
 
 	@Override
 	public boolean isValid() {
-		if (this.socketChannel == null || this.socketChannel.getSocket() == null
-				|| !this.socketChannel.getSocket().isConnected() || this.socketChannel.getSocket().isClosed()) {
+		SocketChannel<? extends InteractiveModel, ? super InteractiveModel> socketChannel = this.socketChannel;
+		if (socketChannel == null || socketChannel.getSocket() == null
+		//
+				|| !socketChannel.getSocket().isConnected() || socketChannel.getSocket().isClosed()) {
 			return false;
 		}
 
 		try {
 			// 心跳测试
 			InteractiveModel interactiveModel = InteractiveModel.of(InteractiveTypeEnum.HEART_TEST, null);
-			this.socketChannel.writeAndFlush(interactiveModel);
+			socketChannel.writeAndFlush(interactiveModel);
 		} catch (Exception e) {
 			return false;
 		}
@@ -61,14 +63,15 @@ public class ControlSocket implements IControlSocket, Runnable {
 	public void close() {
 		this.isAlive = false;
 
-		if (myThread != null) {
+		Thread myThread;
+		if ((myThread = this.myThread) != null) {
+			this.myThread = null;
 			myThread.interrupt();
-			myThread = null;
 		}
 
-		if (socketChannel != null) {
+		if (this.socketChannel != null) {
 			try {
-				socketChannel.close();
+				this.socketChannel.close();
 			} catch (IOException e) {
 				// do no thing
 			}
@@ -82,7 +85,7 @@ public class ControlSocket implements IControlSocket, Runnable {
 				new ServerWaitModel(socketPartKey));
 
 		try {
-			socketChannel.writeAndFlush(model);
+			this.socketChannel.writeAndFlush(model);
 		} catch (Exception e) {
 			return false;
 		}
@@ -93,15 +96,16 @@ public class ControlSocket implements IControlSocket, Runnable {
 	@Override
 	public void startRecv() {
 		this.isAlive = true;
-		if (myThread == null || !myThread.isAlive()) {
-			myThread = new Thread(this);
-			myThread.setName("control-recv-" + this.formatServerListenInfo());
-			myThread.start();
+		if (this.myThread == null || !this.myThread.isAlive()) {
+			this.myThread = new Thread(this);
+			this.myThread.setName("control-recv-" + this.formatServerListenInfo());
+			this.myThread.start();
 		}
 	}
 
 	@Override
 	public void run() {
+		SocketChannel<? extends InteractiveModel, ? super InteractiveModel> socketChannel = this.socketChannel;
 		while (this.isAlive) {
 			try {
 				InteractiveModel interactiveModel = socketChannel.read();
@@ -109,7 +113,7 @@ public class ControlSocket implements IControlSocket, Runnable {
 				log.info("监听线程 [{}] 接收到控制端口发来的消息：[ {} ]", this.formatServerListenInfo(), interactiveModel);
 
 				boolean proc = false;
-				for (IRecvHandler<? super InteractiveModel, ? extends InteractiveModel> handler : recvHandlerList) {
+				for (IRecvHandler<? super InteractiveModel, ? extends InteractiveModel> handler : this.recvHandlerList) {
 					proc = handler.proc(interactiveModel, this.socketChannel);
 					if (proc) {
 						break;
@@ -138,7 +142,7 @@ public class ControlSocket implements IControlSocket, Runnable {
 		if (Objects.isNull(this.serverListenThread)) {
 			return null;
 		}
-		return serverListenThread.formatInfo();
+		return this.serverListenThread.formatInfo();
 	}
 
 	@Override

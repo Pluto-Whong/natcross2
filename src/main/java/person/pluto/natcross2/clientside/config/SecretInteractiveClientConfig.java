@@ -32,8 +32,8 @@ public class SecretInteractiveClientConfig extends InteractiveClientConfig {
         SecretInteractiveChannel channel = new SecretInteractiveChannel();
 
         channel.setCharset(this.getCharset());
-        channel.setTokenKey(tokenKey);
-        channel.setAesKey(aesKey);
+        channel.setTokenKey(this.tokenKey);
+        channel.setAesKey(this.aesKey);
 
         try {
             Socket socket = new Socket(this.getClientServiceIp(), this.getClientServicePort());

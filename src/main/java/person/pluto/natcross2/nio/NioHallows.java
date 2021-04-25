@@ -42,10 +42,14 @@ public final class NioHallows implements Runnable {
 
 	private volatile Thread myThread = null;
 
+	private volatile boolean alive = false;
+
 	private volatile Selector selector;
 	private final Object selectorLock = new Object();
 
-	private Map<SelectableChannel, ProcesserHolder> chanelProcesserMap = new ConcurrentHashMap<>();
+	private final CountWaitLatch countWaitLatch = new CountWaitLatch();
+
+	private final Map<SelectableChannel, ProcesserHolder> chanelProcesserMap = new ConcurrentHashMap<>();
 
 	@Setter
 	@Getter
@@ -54,22 +58,18 @@ public final class NioHallows implements Runnable {
 	@Getter
 	private long wakeupSleepNanos = 1000000L;
 
-	private boolean alive = false;
-
-	private CountWaitLatch countWaitLatch = new CountWaitLatch();
-
 	public Selector getSelector() throws IOException {
-		if (Objects.isNull(selector)) {
-			synchronized (selectorLock) {
+		if (Objects.isNull(this.selector)) {
+			synchronized (this.selectorLock) {
 				// 二次校验
-				if (Objects.isNull(selector)) {
-					selector = Selector.open();
+				if (Objects.isNull(this.selector)) {
+					this.selector = Selector.open();
 					this.start();
 				}
 			}
 		}
 
-		return selector;
+		return this.selector;
 	}
 
 	public Selector getWakeupSelector() throws IOException {
@@ -79,17 +79,17 @@ public final class NioHallows implements Runnable {
 	public void register0(SelectableChannel channel, int ops, INioProcesser proccesser) throws IOException {
 		Objects.requireNonNull(channel, "channel non null");
 		try {
-			chanelProcesserMap.put(channel, ProcesserHolder.of(channel, ops, proccesser));
+			this.chanelProcesserMap.put(channel, ProcesserHolder.of(channel, ops, proccesser));
 			channel.configureBlocking(false);
 
-			countWaitLatch.countUp();
+			this.countWaitLatch.countUp();
 			// 这里有个坑点，如果在select中，这里会被阻塞
-			channel.register(getWakeupSelector(), ops);
+			channel.register(this.getWakeupSelector(), ops);
 		} catch (Throwable e) {
-			chanelProcesserMap.remove(channel);
+			this.chanelProcesserMap.remove(channel);
 			throw e;
 		} finally {
-			countWaitLatch.countDown();
+			this.countWaitLatch.countDown();
 		}
 	}
 
@@ -97,9 +97,9 @@ public final class NioHallows implements Runnable {
 		if (Objects.isNull(channel)) {
 			return;
 		}
-		chanelProcesserMap.remove(channel);
+		this.chanelProcesserMap.remove(channel);
 
-		SelectionKey key = channel.keyFor(selector);
+		SelectionKey key = channel.keyFor(this.selector);
 
 		if (Objects.nonNull(key)) {
 			key.cancel();
@@ -108,14 +108,17 @@ public final class NioHallows implements Runnable {
 
 	@Override
 	public void run() {
-		for (; alive;) {
+		CountWaitLatch countWaitLatch = this.countWaitLatch;
+		Map<SelectableChannel, ProcesserHolder> chanelProcesserMap = this.chanelProcesserMap;
+
+		for (; this.alive;) {
 			try {
 				// 采用有期限的监听，以免线程太快，没有来的及注册，就永远阻塞在那里了
 				int select = getSelector().select(this.getSelectTimeout());
 				if (select <= 0) {
 					// 给注册事务一个时间，如果等待时间太长（可能需要注入的太多），就跳出再去获取新事件，防止饿死
 					try {
-						countWaitLatch.await(wakeupSleepNanos, TimeUnit.NANOSECONDS);
+						countWaitLatch.await(this.wakeupSleepNanos, TimeUnit.NANOSECONDS);
 					} catch (InterruptedException e) {
 						log.warn("selector wait register timeout");
 					}
@@ -146,12 +149,11 @@ public final class NioHallows implements Runnable {
 	}
 
 	public void start() {
-		if (myThread == null || !myThread.isAlive()) {
-			myThread = new Thread(this);
-			myThread.setName("nio-hallows");
-
-			this.alive = true;
-			myThread.start();
+		this.alive = true;
+		if (this.myThread == null || !this.myThread.isAlive()) {
+			this.myThread = new Thread(this);
+			this.myThread.setName("nio-hallows");
+			this.myThread.start();
 
 			log.info("NioHallows is started!");
 		}
@@ -162,17 +164,19 @@ public final class NioHallows implements Runnable {
 
 		this.alive = false;
 
-		if (selector != null) {
+		Selector selector;
+		if ((selector = this.selector) != null) {
+			this.selector = null;
 			try {
 				selector.close();
-				selector = null;
 			} catch (IOException e) {
 			}
 		}
 
-		if (myThread != null) {
+		Thread myThread;
+		if ((myThread = this.myThread) != null) {
+			this.myThread = null;
 			myThread.interrupt();
-			myThread = null;
 		}
 	}
 

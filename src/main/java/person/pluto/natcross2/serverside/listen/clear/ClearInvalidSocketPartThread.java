@@ -21,60 +21,61 @@ import person.pluto.natcross2.serverside.listen.ServerListenThread;
 @NoArgsConstructor
 public class ClearInvalidSocketPartThread implements IClearInvalidSocketPartThread {
 
-    private Thread myThread = null;
+	private volatile Thread myThread = null;
 
-    private boolean isAlive = false;
+	private volatile boolean isAlive = false;
 
-    private ServerListenThread serverListenThread;
+	private ServerListenThread serverListenThread;
 
-    /**
-     * 清理间隔
-     */
-    @Setter
-    @Getter
-    private Long clearIntervalSeconds = 10L;
+	/**
+	 * 清理间隔
+	 */
+	@Setter
+	@Getter
+	private Long clearIntervalSeconds = 10L;
 
-    public ClearInvalidSocketPartThread(ServerListenThread serverListenThread) {
-        this.setServerListenThread(serverListenThread);
-    }
+	public ClearInvalidSocketPartThread(ServerListenThread serverListenThread) {
+		this.setServerListenThread(serverListenThread);
+	}
 
-    @Override
-    public void run() {
-        while (isAlive) {
-            serverListenThread.clearInvaildSocketPart();
+	@Override
+	public void run() {
+		while (this.isAlive) {
+			this.serverListenThread.clearInvaildSocketPart();
 
-            try {
-                TimeUnit.SECONDS.sleep(clearIntervalSeconds);
-            } catch (InterruptedException e) {
-                // do no thing
-            }
-        }
-    }
+			try {
+				TimeUnit.SECONDS.sleep(this.clearIntervalSeconds);
+			} catch (InterruptedException e) {
+				// do no thing
+			}
+		}
+	}
 
-    @Override
-    public void start() {
-        this.isAlive = true;
-        if (myThread == null || !myThread.isAlive()) {
-            myThread = new Thread(this);
-            myThread.setName("clear-invalid-socket-part-" + serverListenThread.formatInfo());
-            myThread.start();
-        }
-        log.info("ClearInvalidSocketPartThread for [{}] started !", this.serverListenThread.getListenPort());
-    }
+	@Override
+	public void start() {
+		this.isAlive = true;
+		if (this.myThread == null || !this.myThread.isAlive()) {
+			this.myThread = new Thread(this);
+			this.myThread.setName("clear-invalid-socket-part-" + serverListenThread.formatInfo());
+			this.myThread.start();
+		}
+		log.info("ClearInvalidSocketPartThread for [{}] started !", this.serverListenThread.getListenPort());
+	}
 
-    @Override
-    public void cancel() {
-        this.isAlive = false;
-        if (myThread != null) {
-            myThread.interrupt();
-            myThread = null;
-        }
-        log.info("ClearInvalidSocketPartThread for [{}] cancell !", this.serverListenThread.getListenPort());
-    }
+	@Override
+	public void cancel() {
+		this.isAlive = false;
+		Thread myThread;
+		if ((myThread = this.myThread) != null) {
+			this.myThread = null;
+			myThread.interrupt();
+		}
+		log.info("ClearInvalidSocketPartThread for [{}] cancell !", this.serverListenThread.getListenPort());
+	}
 
-    @Override
-    public void setServerListenThread(ServerListenThread serverListenThread) {
-        this.serverListenThread = serverListenThread;
-    }
+	@Override
+	public void setServerListenThread(ServerListenThread serverListenThread) {
+		this.serverListenThread = serverListenThread;
+	}
 
 }

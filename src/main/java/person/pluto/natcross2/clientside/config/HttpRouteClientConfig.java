@@ -3,11 +3,10 @@ package person.pluto.natcross2.clientside.config;
 import java.net.Socket;
 import java.nio.channels.spi.SelectorProvider;
 import java.nio.charset.Charset;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Objects;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -42,7 +41,7 @@ public class HttpRouteClientConfig extends InteractiveClientConfig {
 	private HttpRoute masterRoute = null;
 	private LinkedHashMap<String, HttpRoute> routeMap = new LinkedHashMap<>();
 
-	private ReentrantLock routeLock = new ReentrantLock();
+	private final ReentrantReadWriteLock routeLock = new ReentrantReadWriteLock(true);
 
 	public HttpRouteClientConfig() {
 		this.baseConfig = new InteractiveClientConfig();
@@ -64,10 +63,13 @@ public class HttpRouteClientConfig extends InteractiveClientConfig {
 		Objects.requireNonNull(masterRoute, "主路由不得为空");
 		Objects.requireNonNull(routeMap, "路由表不得为null");
 
-		routeLock.lock();
+		ReentrantReadWriteLock routeLock = this.routeLock;
+		routeLock.writeLock().lock();
+
 		this.masterRoute = masterRoute;
 		this.routeMap = routeMap;
-		routeLock.unlock();
+
+		routeLock.writeLock().unlock();
 	}
 
 	/**
@@ -81,19 +83,22 @@ public class HttpRouteClientConfig extends InteractiveClientConfig {
 		if (httpRoutes == null || httpRoutes.length < 1) {
 			return;
 		}
-		routeLock.lock();
+
+		ReentrantReadWriteLock routeLock = this.routeLock;
+		routeLock.writeLock().lock();
 		try {
-			if (Objects.isNull(masterRoute)) {
-				masterRoute = httpRoutes[0];
+			if (Objects.isNull(this.masterRoute)) {
+				this.masterRoute = httpRoutes[0];
 			}
+			LinkedHashMap<String, HttpRoute> routeMap = this.routeMap;
 			for (HttpRoute model : httpRoutes) {
 				routeMap.put(model.getHost(), model);
 				if (model.isMaster()) {
-					masterRoute = model;
+					this.masterRoute = model;
 				}
 			}
 		} finally {
-			routeLock.unlock();
+			routeLock.writeLock().unlock();
 		}
 	}
 
@@ -109,18 +114,26 @@ public class HttpRouteClientConfig extends InteractiveClientConfig {
 			return;
 		}
 
-		routeLock.lock();
+		ReentrantReadWriteLock routeLock = this.routeLock;
+		routeLock.writeLock().lock();
 		try {
+			LinkedHashMap<String, HttpRoute> routeMap = this.routeMap;
+			HttpRoute masterRoute = this.masterRoute;
+
+			String masterRouteHost = masterRoute.getHost();
 			for (String host : hosts) {
 				routeMap.remove(host);
-				if (StringUtils.equals(masterRoute.getHost(), host)) {
+				if (StringUtils.equals(masterRouteHost, host)) {
+					this.masterRoute = null;
+
+					// 减少string比较复杂度
+					masterRouteHost = null;
 					masterRoute = null;
 				}
 			}
 
 			if (Objects.isNull(masterRoute)) {
-				Collection<HttpRoute> values = routeMap.values();
-				Iterator<HttpRoute> iterator = values.iterator();
+				Iterator<HttpRoute> iterator = routeMap.values().iterator();
 				if (iterator.hasNext()) {
 					// 先将第一个设置为主路由，再遍历所有，如果是主标志则设置为主，以最后的主为准
 					masterRoute = iterator.next();
@@ -128,16 +141,19 @@ public class HttpRouteClientConfig extends InteractiveClientConfig {
 					while (iterator.hasNext()) {
 						HttpRoute model = iterator.next();
 						if (model.isMaster()) {
+							// 因使用的LinkedHashMap，就是让其符合初期定义，将后续加入有isMaster标志的路由设置为masterRoute
 							masterRoute = model;
 						}
 					}
+
+					this.masterRoute = masterRoute;
 				} else {
 					log.warn("{}:{} 路由是空的，若需要重新设置，请使用preset进行设置", this.getClientServiceIp(),
 							this.getClientServicePort());
 				}
 			}
 		} finally {
-			routeLock.unlock();
+			routeLock.writeLock().unlock();
 		}
 
 	}
@@ -172,11 +188,12 @@ public class HttpRouteClientConfig extends InteractiveClientConfig {
 	public AbsSocketPart newSocketPart(ClientControlThread clientControlThread) {
 		HttpRouteSocketPart httpRouteSocketPart;
 
-		routeLock.lock();
+		ReentrantReadWriteLock routeLock = this.routeLock;
+		routeLock.readLock().lock();
 		try {
-			httpRouteSocketPart = new HttpRouteSocketPart(clientControlThread, masterRoute, routeMap);
+			httpRouteSocketPart = new HttpRouteSocketPart(clientControlThread, this.masterRoute, this.routeMap);
 		} finally {
-			routeLock.unlock();
+			routeLock.readLock().unlock();
 		}
 
 		httpRouteSocketPart.setStreamCacheSize(this.getStreamCacheSize());
@@ -193,32 +210,32 @@ public class HttpRouteClientConfig extends InteractiveClientConfig {
 
 	@Override
 	public String getClientServiceIp() {
-		return baseConfig.getClientServiceIp();
+		return this.baseConfig.getClientServiceIp();
 	}
 
 	@Override
 	public void setClientServiceIp(String clientServiceIp) {
-		baseConfig.setClientServiceIp(clientServiceIp);
+		this.baseConfig.setClientServiceIp(clientServiceIp);
 	}
 
 	@Override
 	public Integer getClientServicePort() {
-		return baseConfig.getClientServicePort();
+		return this.baseConfig.getClientServicePort();
 	}
 
 	@Override
 	public void setClientServicePort(Integer clientServicePort) {
-		baseConfig.setClientServicePort(clientServicePort);
+		this.baseConfig.setClientServicePort(clientServicePort);
 	}
 
 	@Override
 	public Integer getListenServerPort() {
-		return baseConfig.getListenServerPort();
+		return this.baseConfig.getListenServerPort();
 	}
 
 	@Override
 	public void setListenServerPort(Integer listenServerPort) {
-		baseConfig.setListenServerPort(listenServerPort);
+		this.baseConfig.setListenServerPort(listenServerPort);
 	}
 
 	@Override
@@ -243,22 +260,22 @@ public class HttpRouteClientConfig extends InteractiveClientConfig {
 
 	@Override
 	public Charset getCharset() {
-		return baseConfig.getCharset();
+		return this.baseConfig.getCharset();
 	}
 
 	@Override
 	public void setCharset(Charset charset) {
-		baseConfig.setCharset(charset);
+		this.baseConfig.setCharset(charset);
 	}
 
 	@Override
 	public int getStreamCacheSize() {
-		return baseConfig.getStreamCacheSize();
+		return this.baseConfig.getStreamCacheSize();
 	}
 
 	@Override
 	public void setStreamCacheSize(int streamCacheSize) {
-		baseConfig.setStreamCacheSize(streamCacheSize);
+		this.baseConfig.setStreamCacheSize(streamCacheSize);
 	};
 
 }

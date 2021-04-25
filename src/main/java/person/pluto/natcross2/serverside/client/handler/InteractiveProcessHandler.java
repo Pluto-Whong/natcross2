@@ -1,6 +1,6 @@
 package person.pluto.natcross2.serverside.client.handler;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +27,7 @@ public class InteractiveProcessHandler implements IPassValueHandler<InteractiveM
 	/**
 	 * 处理链表
 	 */
-	private List<IProcess> processList = new ArrayList<>();
+	private List<IProcess> processList = new LinkedList<>();
 
 	@Override
 	public PassValueNextEnum proc(SocketChannel<? extends InteractiveModel, ? super InteractiveModel> socketChannel,
@@ -84,7 +84,7 @@ public class InteractiveProcessHandler implements IPassValueHandler<InteractiveM
 	 * @return
 	 */
 	public List<IProcess> getProcessList() {
-		return processList;
+		return this.processList;
 	}
 
 	/**

@@ -1,6 +1,7 @@
 package person.pluto.natcross2.api.socketpart;
 
 import java.io.IOException;
+import java.net.Socket;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -31,7 +32,7 @@ public class SecretSocketPart extends AbsSocketPart implements IBelongControl {
 
 	@Getter
 	@Setter
-	private int streamCacheSize = 4096;
+	private int streamCacheSize = 8192;
 
 	public SecretSocketPart(IBelongControl belongThread) {
 		super(belongThread);
@@ -40,11 +41,11 @@ public class SecretSocketPart extends AbsSocketPart implements IBelongControl {
 	@Override
 	public boolean isValid() {
 		if (super.isValid()) {
-			if (noToSecretPassway == null || !noToSecretPassway.isValid() || secretToNoPassway == null
-					|| !secretToNoPassway.isValid()) {
+			if (this.noToSecretPassway == null || !this.noToSecretPassway.isValid() || this.secretToNoPassway == null
+					|| !this.secretToNoPassway.isValid()) {
 				return false;
 			}
-			return isAlive;
+			return this.isAlive;
 		}
 
 		return false;
@@ -52,33 +53,42 @@ public class SecretSocketPart extends AbsSocketPart implements IBelongControl {
 
 	@Override
 	public void cancel() {
-		log.debug("socketPart {} will cancel", this.socketPartKey);
+		if (!this.isAlive) {
+			return;
+		}
 		this.isAlive = false;
-		if (recvSocket != null) {
+
+		log.debug("socketPart {} will cancel", this.socketPartKey);
+
+		Socket recvSocket;
+		if ((recvSocket = this.recvSocket) != null) {
+			this.recvSocket = null;
 			try {
 				recvSocket.close();
 			} catch (IOException e) {
 				log.debug("socketPart [{}] 监听端口 关闭异常", socketPartKey);
 			}
-			recvSocket = null;
 		}
 
-		if (sendSocket != null) {
+		Socket sendSocket;
+		if ((sendSocket = this.sendSocket) != null) {
+			this.sendSocket = null;
 			try {
 				sendSocket.close();
 			} catch (IOException e) {
 				log.debug("socketPart [{}] 发送端口 关闭异常", socketPartKey);
 			}
-			sendSocket = null;
 		}
 
-		if (noToSecretPassway != null) {
-			noToSecretPassway.cancell();
-			noToSecretPassway = null;
+		SecretPassway noToSecretPassway;
+		if ((noToSecretPassway = this.noToSecretPassway) != null) {
+			this.noToSecretPassway = null;
+			noToSecretPassway.cancel();
 		}
-		if (secretToNoPassway != null) {
-			secretToNoPassway.cancell();
-			secretToNoPassway = null;
+		SecretPassway secretToNoPassway;
+		if ((secretToNoPassway = this.secretToNoPassway) != null) {
+			this.secretToNoPassway = null;
+			secretToNoPassway.cancel();
 		}
 
 		log.debug("socketPart {} is cancelled", this.socketPartKey);
@@ -92,20 +102,20 @@ public class SecretSocketPart extends AbsSocketPart implements IBelongControl {
 		this.isAlive = true;
 		try {
 			// 主要面向服务端-客户端过程加密
-			noToSecretPassway = new SecretPassway();
+			SecretPassway noToSecretPassway = this.noToSecretPassway = new SecretPassway();
 			noToSecretPassway.setBelongControl(this);
 			noToSecretPassway.setMode(Mode.noToSecret);
-			noToSecretPassway.setRecvSocket(recvSocket);
-			noToSecretPassway.setSendSocket(sendSocket);
+			noToSecretPassway.setRecvSocket(this.recvSocket);
+			noToSecretPassway.setSendSocket(this.sendSocket);
 			noToSecretPassway.setStreamCacheSize(getStreamCacheSize());
 			noToSecretPassway.setSecret(secret);
 
-			secretToNoPassway = new SecretPassway();
+			SecretPassway secretToNoPassway = this.secretToNoPassway = new SecretPassway();
 			secretToNoPassway.setBelongControl(this);
 			secretToNoPassway.setMode(Mode.secretToNo);
-			secretToNoPassway.setRecvSocket(sendSocket);
-			secretToNoPassway.setSendSocket(recvSocket);
-			secretToNoPassway.setSecret(secret);
+			secretToNoPassway.setRecvSocket(this.sendSocket);
+			secretToNoPassway.setSendSocket(this.recvSocket);
+			secretToNoPassway.setSecret(this.secret);
 
 			noToSecretPassway.start();
 			secretToNoPassway.start();
@@ -119,12 +129,14 @@ public class SecretSocketPart extends AbsSocketPart implements IBelongControl {
 
 	public void stop() {
 		this.cancel();
-		if (belongThread != null) {
-			belongThread.stopSocketPart(socketPartKey);
+
+		IBelongControl belong;
+		if ((belong = this.belongThread) != null) {
+			this.belongThread = null;
+			belong.noticeStop();
 		}
-		belongThread = null;
 	}
-	
+
 	@Override
 	public void noticeStop() {
 		this.stop();

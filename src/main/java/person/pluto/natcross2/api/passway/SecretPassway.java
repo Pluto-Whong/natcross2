@@ -44,7 +44,7 @@ public class SecretPassway implements Runnable {
 
 	private IBelongControl belongControl;
 
-	private int streamCacheSize = 4096;
+	private int streamCacheSize = 8192;
 
 	private Socket recvSocket;
 	private Socket sendSocket;
@@ -62,7 +62,7 @@ public class SecretPassway implements Runnable {
 		}
 		log.debug("one InputToOutputThread closed");
 		// 传输完成后退出
-		this.cancell();
+		this.cancel();
 	}
 
 	/**
@@ -74,18 +74,20 @@ public class SecretPassway implements Runnable {
 	 */
 	private void secretToNo() throws Exception {
 		@SuppressWarnings("resource")
-		LengthChannel recvChannel = new LengthChannel(recvSocket);
+		LengthChannel recvChannel = new LengthChannel(this.recvSocket);
 
-		OutputStream outputStream = sendSocket.getOutputStream();
-		SocketChannel outputChannel = sendSocket.getChannel();
+		OutputStream outputStream = this.sendSocket.getOutputStream();
+		SocketChannel outputChannel = this.sendSocket.getChannel();
 
-		while (alive) {
-			byte[] read = recvChannel.read();
-			if (read == null || read.length < 1) {
+		byte[] read;
+		byte[] decrypt;
+		while (this.alive) {
+			read = recvChannel.read();
+			if (read == null) {
 				break;
 			}
 
-			byte[] decrypt = secret.decrypt(read);
+			decrypt = secret.decrypt(read);
 
 			if (Objects.isNull(outputChannel)) {
 				outputStream.write(decrypt);
@@ -104,16 +106,20 @@ public class SecretPassway implements Runnable {
 	 * @throws Exception
 	 */
 	private void noToSecret() throws Exception {
-		InputStream inputStream = recvSocket.getInputStream();
+		InputStream inputStream = this.recvSocket.getInputStream();
 
 		@SuppressWarnings("resource")
-		LengthChannel sendChannel = new LengthChannel(sendSocket);
+		LengthChannel sendChannel = new LengthChannel(this.sendSocket);
+
+		// 字段赋值局部变量，入栈
+		boolean alive = this.alive;
+		ISecret secret = this.secret;
 
 		int len = -1;
 		byte[] arrayTemp = new byte[streamCacheSize];
-
+		byte[] encrypt;
 		while (alive && (len = inputStream.read(arrayTemp)) > 0) {
-			byte[] encrypt = secret.encrypt(arrayTemp, 0, len);
+			encrypt = secret.encrypt(arrayTemp, 0, len);
 			sendChannel.writeAndFlush(encrypt);
 		}
 	}
@@ -126,7 +132,7 @@ public class SecretPassway implements Runnable {
 	 * @return
 	 */
 	public boolean isValid() {
-		return alive;
+		return this.alive;
 	}
 
 	/**
@@ -135,24 +141,34 @@ public class SecretPassway implements Runnable {
 	 * @author Pluto
 	 * @since 2020-01-08 15:57:48
 	 */
-	public void cancell() {
+	public void cancel() {
+		if (!this.alive) {
+			return;
+		}
 		this.alive = false;
 
 		NioHallows.release(recvSocket.getChannel());
 
 		try {
-			this.recvSocket.close();
-			this.sendSocket.close();
+			Socket recvSocket;
+			if ((recvSocket = this.recvSocket) != null) {
+				this.recvSocket = null; // help GC
+				recvSocket.close();
+			}
+
+			Socket sendSocket = this.sendSocket;
+			if ((sendSocket = this.sendSocket) != null) {
+				this.sendSocket = null; // help GC
+				sendSocket.close();
+			}
 		} catch (IOException e) {
 			// do no thing
 		}
 
-		if (belongControl != null) {
-			IBelongControl belong = belongControl;
+		IBelongControl belong;
+		if ((belong = belongControl) != null) {
 			belongControl = null;
-			if (belong != null) {
-				belong.noticeStop();
-			}
+			belong.noticeStop();
 		}
 	}
 
@@ -163,11 +179,11 @@ public class SecretPassway implements Runnable {
 	 * @since 2020-01-08 15:57:53
 	 */
 	public void start() {
-		if (!this.alive) {
-			this.alive = true;
-
-			NatcrossExecutor.executePassway(this);
+		if (this.alive) {
+			return;
 		}
+		this.alive = true;
+		NatcrossExecutor.executePassway(this);
 	}
 
 }

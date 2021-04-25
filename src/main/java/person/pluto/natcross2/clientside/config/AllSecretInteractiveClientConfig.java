@@ -28,7 +28,7 @@ public class AllSecretInteractiveClientConfig extends SecretInteractiveClientCon
     @Override
     public AbsSocketPart newSocketPart(ClientControlThread clientControlThread) {
         AESSecret secret = new AESSecret();
-        secret.setAesKey(passwayKey);
+        secret.setAesKey(this.passwayKey);
         SecretSocketPart secretSocketPart = new SecretSocketPart(clientControlThread);
         secretSocketPart.setSecret(secret);
         return secretSocketPart;

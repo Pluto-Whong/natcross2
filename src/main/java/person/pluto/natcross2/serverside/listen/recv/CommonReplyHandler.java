@@ -34,7 +34,8 @@ public class CommonReplyHandler implements IRecvHandler<InteractiveModel, Intera
 			return false;
 		}
 
-		if (Objects.isNull(handler)) {
+		IRecvHandler<InteractiveModel, InteractiveModel> handler;
+		if (Objects.isNull(handler = this.handler)) {
 			log.info("common reply: {}", model);
 			return true;
 		}

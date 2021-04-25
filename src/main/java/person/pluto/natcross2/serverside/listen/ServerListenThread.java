@@ -36,33 +36,33 @@ import person.pluto.natcross2.utils.Assert;
 @Slf4j
 public final class ServerListenThread implements Runnable, INioProcesser, IBelongControl {
 
-	private Thread myThread = null;
+	private volatile Thread myThread = null;
 
-	private IListenServerConfig config;
+	private volatile boolean isAlive = false;
+	private volatile boolean canceled = false;
 
-	private boolean isAlive = false;
-	private boolean canceled = false;
-	private ServerSocket listenServerSocket;
+	private final IListenServerConfig config;
+	private final ServerSocket listenServerSocket;
 
-	private Map<String, AbsSocketPart> socketPartMap = new ConcurrentHashMap<>();
+	private final Map<String, AbsSocketPart> socketPartMap = new ConcurrentHashMap<>();
 
-	private IControlSocket controlSocket;
-	private IClearInvalidSocketPartThread clearInvalidSocketPartThread;
+	private volatile IControlSocket controlSocket;
+	private volatile IClearInvalidSocketPartThread clearInvalidSocketPartThread;
 
 	public ServerListenThread(IListenServerConfig config) throws Exception {
 		this.config = config;
 
 		// 此处就开始占用端口，防止重复占用端口，和启动时已被占用
-		listenServerSocket = this.config.createServerSocket();
+		this.listenServerSocket = this.config.createServerSocket();
 
 		log.info("server listen port[{}] is created!", this.getListenPort());
 	}
 
 	@Override
 	public void run() {
-		while (isAlive) {
+		while (this.isAlive) {
 			try {
-				Socket listenSocket = listenServerSocket.accept();
+				Socket listenSocket = this.listenServerSocket.accept();
 				procMethod(listenSocket);
 			} catch (Exception e) {
 				log.warn("监听服务[" + this.getListenPort() + "]服务异常", e);
@@ -90,7 +90,7 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 	private void procMethod(Socket listenSocket) {
 		NatcrossExecutor.executeServerListenAccept(() -> {
 			// 如果没有控制接收socket，则取消接入，不主动关闭所有接口，防止controlSocket临时掉线，讲道理没有controlSocket也不会启动
-			if (Objects.isNull(controlSocket)) {
+			if (Objects.isNull(this.controlSocket)) {
 				try {
 					listenSocket.close();
 				} catch (IOException e) {
@@ -101,14 +101,14 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 
 			String socketPartKey = CommonFormat.getSocketPartKey(this.getListenPort());
 
-			AbsSocketPart socketPart = config.newSocketPart(ServerListenThread.this);
+			AbsSocketPart socketPart = this.config.newSocketPart(ServerListenThread.this);
 			socketPart.setSocketPartKey(socketPartKey);
 			socketPart.setRecvSocket(listenSocket);
 
-			socketPartMap.put(socketPartKey, socketPart);
+			this.socketPartMap.put(socketPartKey, socketPart);
 			// 发送指令失败，同controlSocket为空，不使用异步执行，毕竟接口发送只能顺序，异步的方式也会被锁，等同同步
 			if (!sendClientWait(socketPartKey)) {
-				socketPartMap.remove(socketPartKey);
+				this.socketPartMap.remove(socketPartKey);
 				socketPart.cancel();
 				return;
 			}
@@ -159,13 +159,13 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 		log.info("server listen port[{}] starting ...", this.getListenPort());
 
 		if (this.clearInvalidSocketPartThread == null) {
-			this.clearInvalidSocketPartThread = config.newClearInvalidSocketPartThread(this);
+			this.clearInvalidSocketPartThread = this.config.newClearInvalidSocketPartThread(this);
 			if (this.clearInvalidSocketPartThread != null) {
 				this.clearInvalidSocketPartThread.start();
 			}
 		}
 
-		ServerSocketChannel channel = listenServerSocket.getChannel();
+		ServerSocketChannel channel = this.listenServerSocket.getChannel();
 		if (Objects.nonNull(channel)) {
 			if (!channel.isRegistered() || (channel.validOps() & SelectionKey.OP_ACCEPT) == 0) {
 				try {
@@ -178,10 +178,10 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 
 			}
 		} else {
-			if (myThread == null || !myThread.isAlive()) {
-				myThread = new Thread(this);
-				myThread.setName("server-listen-" + this.formatInfo());
-				myThread.start();
+			if (this.myThread == null || !this.myThread.isAlive()) {
+				this.myThread = new Thread(this);
+				this.myThread.setName("server-listen-" + this.formatInfo());
+				this.myThread.start();
 			}
 		}
 
@@ -196,20 +196,22 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 	 */
 	public void stopListen() {
 		log.info("stopListen[{}]", this.getListenPort());
-		isAlive = false;
+		this.isAlive = false;
 
-		if (controlSocket != null) {
+		IControlSocket controlSocket = this.controlSocket;
+		if ((controlSocket = this.controlSocket) != null) {
+			this.controlSocket = null;
 			try {
 				controlSocket.close();
 			} catch (Exception e) {
 				log.debug("监听服务控制端口关闭异常", e);
 			}
-			this.controlSocket = null;
 		}
 
-		if (myThread != null) {
+		Thread myThread;
+		if ((myThread = this.myThread) != null) {
+			this.myThread = null;
 			myThread.interrupt();
-			myThread = null;
 		}
 	}
 
@@ -224,33 +226,29 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 			return;
 		}
 		this.canceled = true;
+		this.stopListen();
 
 		ListenServerControl.remove(this.getListenPort());
 
 		log.info("serverListen cancelling[{}]", this.getListenPort());
 
-		this.stopListen();
-
-		if (listenServerSocket != null) {
-			try {
-				listenServerSocket.close();
-			} catch (Exception e) {
-				// do no thing
-			}
-			listenServerSocket = null;
+		try {
+			this.listenServerSocket.close();
+		} catch (Exception e) {
+			// do no thing
 		}
 
-		if (this.clearInvalidSocketPartThread != null) {
-			try {
-				this.clearInvalidSocketPartThread.cancel();
-			} catch (Exception e) {
-				// do no thing
-			}
+		IClearInvalidSocketPartThread clearInvalidSocketPartThread = this.clearInvalidSocketPartThread;
+		if ((clearInvalidSocketPartThread = this.clearInvalidSocketPartThread) != null) {
 			this.clearInvalidSocketPartThread = null;
+			try {
+				clearInvalidSocketPartThread.cancel();
+			} catch (Exception e) {
+				// do no thing
+			}
 		}
 
-		Set<String> keySet = socketPartMap.keySet();
-		String[] array = keySet.toArray(new String[0]);
+		String[] array = socketPartMap.keySet().toArray(new String[0]);
 
 		for (String key : array) {
 			stopSocketPart(key);
@@ -270,12 +268,11 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 	@Override
 	public boolean stopSocketPart(String socketPartKey) {
 		log.debug("停止接口 stopSocketPart[{}]", socketPartKey);
-		AbsSocketPart socketPart = socketPartMap.get(socketPartKey);
+		AbsSocketPart socketPart = this.socketPartMap.remove(socketPartKey);
 		if (socketPart == null) {
 			return false;
 		}
 		socketPart.cancel();
-		socketPartMap.remove(socketPartKey);
 		return true;
 	}
 
@@ -294,7 +291,7 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 
 		for (String key : array) {
 
-			AbsSocketPart socketPart = socketPartMap.get(key);
+			AbsSocketPart socketPart = this.socketPartMap.get(key);
 			if (socketPart != null && !socketPart.isValid()) {
 				stopSocketPart(key);
 			} else {
@@ -313,7 +310,7 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 	 */
 	public boolean doSetPartClient(String socketPartKey, Socket sendSocket) {
 		log.debug("接入接口 doSetPartClient[{}]", socketPartKey);
-		AbsSocketPart socketPart = socketPartMap.get(socketPartKey);
+		AbsSocketPart socketPart = this.socketPartMap.get(socketPartKey);
 		if (socketPart == null) {
 			return false;
 		}
@@ -364,7 +361,7 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 	 * @return
 	 */
 	public Integer getListenPort() {
-		return config.getListenPort();
+		return this.config.getListenPort();
 	}
 
 	/**
@@ -397,7 +394,7 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 	 * @return
 	 */
 	public boolean isAlive() {
-		return isAlive;
+		return this.isAlive;
 	}
 
 	/**
@@ -408,7 +405,7 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 	 * @since 2021-04-13 13:39:11
 	 */
 	public boolean isCanceled() {
-		return canceled;
+		return this.canceled;
 	}
 
 	/**
@@ -419,7 +416,7 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 	 * @return
 	 */
 	public IListenServerConfig getConfig() {
-		return config;
+		return this.config;
 	}
 
 	public String formatInfo() {

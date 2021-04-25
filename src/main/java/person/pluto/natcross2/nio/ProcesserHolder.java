@@ -25,11 +25,11 @@ public class ProcesserHolder {
 	private INioProcesser processer;
 
 	public void proccess(SelectionKey key) {
-		processer.proccess(key);
+		this.processer.proccess(key);
 		if (key.isValid()) {
-			key.interestOps(interestOps);
+			key.interestOps(this.interestOps);
 		} else {
-			NioHallows.release(channel);
+			NioHallows.release(this.channel);
 		}
 	}
 }

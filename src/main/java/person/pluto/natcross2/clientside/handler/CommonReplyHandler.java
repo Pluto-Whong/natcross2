@@ -34,7 +34,8 @@ public class CommonReplyHandler implements IClientHandler<InteractiveModel, Inte
 			return false;
 		}
 
-		if (Objects.isNull(handler)) {
+		IClientHandler<InteractiveModel, InteractiveModel> handler;
+		if (Objects.isNull(handler = this.handler)) {
 			log.info("common reply: {}", model);
 			return true;
 		}

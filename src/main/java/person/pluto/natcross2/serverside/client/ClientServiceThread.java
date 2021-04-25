@@ -26,29 +26,29 @@ import person.pluto.natcross2.utils.Assert;
 @Slf4j
 public final class ClientServiceThread implements Runnable, INioProcesser {
 
-	private Thread myThread = null;
+	private volatile Thread myThread = null;
 
-	private boolean isAlive = false;
-	private boolean canceled = false;
+	private volatile boolean isAlive = false;
+	private volatile boolean canceled = false;
 	private ServerSocket listenServerSocket;
 
-	private IClientServiceConfig<?, ?> config;
+	private final IClientServiceConfig<?, ?> config;
 
 	public ClientServiceThread(IClientServiceConfig<?, ?> config) throws Exception {
 		this.config = config;
 
 		// 启动时配置，若启动失败则执行cancell并再次抛出异常让上级处理
-		listenServerSocket = config.createServerSocket();
+		this.listenServerSocket = config.createServerSocket();
 
 		log.info("client service [{}] is created!", this.config.getListenPort());
 	}
 
 	@Override
 	public void run() {
-		while (isAlive) {
+		while (this.isAlive) {
 			try {
-				Socket listenSocket = listenServerSocket.accept();
-				procMethod(listenSocket);
+				Socket listenSocket = this.listenServerSocket.accept();
+				this.procMethod(listenSocket);
 			} catch (Exception e) {
 				log.warn("客户端服务进程 轮询等待出现异常", e);
 				this.cancel();
@@ -65,7 +65,7 @@ public final class ClientServiceThread implements Runnable, INioProcesser {
 		try {
 			ServerSocketChannel channel = (ServerSocketChannel) key.channel();
 			SocketChannel accept = channel.accept();
-			procMethod(accept.socket());
+			this.procMethod(accept.socket());
 		} catch (IOException e) {
 			log.warn("客户端服务进程 轮询等待出现异常", e);
 			this.cancel();
@@ -82,7 +82,7 @@ public final class ClientServiceThread implements Runnable, INioProcesser {
 	public void procMethod(Socket listenSocket) {
 		NatcrossExecutor.executeClientServiceAccept(() -> {
 			try {
-				config.getClientServiceAdapter().procMethod(listenSocket);
+				this.config.getClientServiceAdapter().procMethod(listenSocket);
 			} catch (Exception e) {
 				log.error("处理socket异常", e);
 				try {
@@ -106,7 +106,7 @@ public final class ClientServiceThread implements Runnable, INioProcesser {
 		log.info("client service [{}] starting ...", this.config.getListenPort());
 		this.isAlive = true;
 
-		ServerSocketChannel channel = listenServerSocket.getChannel();
+		ServerSocketChannel channel = this.listenServerSocket.getChannel();
 		if (Objects.nonNull(channel)) {
 			if (!channel.isRegistered() || (channel.validOps() & SelectionKey.OP_ACCEPT) == 0) {
 				try {
@@ -118,10 +118,10 @@ public final class ClientServiceThread implements Runnable, INioProcesser {
 				}
 			}
 		} else {
-			if (myThread == null || !myThread.isAlive()) {
-				myThread = new Thread(this);
-				myThread.setName("client-server-" + this.formatInfo());
-				myThread.start();
+			if (this.myThread == null || !this.myThread.isAlive()) {
+				this.myThread = new Thread(this);
+				this.myThread.setName("client-server-" + this.formatInfo());
+				this.myThread.start();
 			}
 		}
 
@@ -142,22 +142,25 @@ public final class ClientServiceThread implements Runnable, INioProcesser {
 
 		log.info("client service [{}] will cancell", this.config.getListenPort());
 
-		isAlive = false;
+		this.isAlive = false;
 
-		if (listenServerSocket != null) {
+		ServerSocket listenServerSocket;
+		if ((listenServerSocket = this.listenServerSocket) != null) {
+			this.listenServerSocket = null;
+
 			NioHallows.release(listenServerSocket.getChannel());
 
 			try {
 				listenServerSocket.close();
-				listenServerSocket = null;
 			} catch (IOException e) {
 				log.warn("监听端口关闭异常", e);
 			}
 		}
 
-		if (myThread != null) {
+		Thread myThread = this.myThread;
+		if ((myThread = this.myThread) != null) {
+			myThread = this.myThread;
 			myThread.interrupt();
-			myThread = null;
 		}
 
 		log.info("client service [{}] cancell success", this.config.getListenPort());
@@ -171,7 +174,7 @@ public final class ClientServiceThread implements Runnable, INioProcesser {
 	 * @return
 	 */
 	public boolean isAlive() {
-		return isAlive;
+		return this.isAlive;
 	}
 
 	/**
@@ -182,7 +185,7 @@ public final class ClientServiceThread implements Runnable, INioProcesser {
 	 * @since 2021-04-13 13:39:11
 	 */
 	public boolean isCanceled() {
-		return canceled;
+		return this.canceled;
 	}
 
 	/**

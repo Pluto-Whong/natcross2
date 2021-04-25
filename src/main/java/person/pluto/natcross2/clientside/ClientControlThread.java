@@ -1,7 +1,6 @@
 package person.pluto.natcross2.clientside;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import lombok.extern.slf4j.Slf4j;
@@ -22,16 +21,16 @@ import person.pluto.natcross2.clientside.heart.IClientHeartThread;
 @Slf4j
 public final class ClientControlThread implements Runnable, IBelongControl {
 
-	private Thread myThread = null;
+	private volatile Thread myThread = null;
 
-	private boolean isAlive = false;
+	private volatile boolean isAlive = false;
 
-	private Map<String, AbsSocketPart> socketPartMap = new ConcurrentHashMap<>();
+	private final Map<String, AbsSocketPart> socketPartMap = new ConcurrentHashMap<>();
 
-	private IClientConfig<?, ?> config;
+	private final IClientConfig<?, ?> config;
 
-	private IClientHeartThread clientHeartThread;
-	private IClientAdapter<?, ?> clientAdapter;
+	private volatile IClientHeartThread clientHeartThread;
+	private volatile IClientAdapter<?, ?> clientAdapter;
 
 	public ClientControlThread(IClientConfig<?, ?> config) {
 		this.config = config;
@@ -64,7 +63,7 @@ public final class ClientControlThread implements Runnable, IBelongControl {
 
 	@Override
 	public void run() {
-		while (isAlive) {
+		while (this.isAlive) {
 			try {
 				// 使用适配器代理执行
 				this.clientAdapter.waitMessage();
@@ -79,12 +78,12 @@ public final class ClientControlThread implements Runnable, IBelongControl {
 	@Override
 	public boolean stopSocketPart(String socketPartKey) {
 		log.debug("stopSocketPart[{}]", socketPartKey);
-		AbsSocketPart socketPart = socketPartMap.get(socketPartKey);
+
+		AbsSocketPart socketPart = this.socketPartMap.remove(socketPartKey);
 		if (socketPart == null) {
 			return false;
 		}
 		socketPart.cancel();
-		socketPartMap.remove(socketPartKey);
 		return true;
 	}
 
@@ -96,7 +95,7 @@ public final class ClientControlThread implements Runnable, IBelongControl {
 	 */
 	public void start() {
 		this.isAlive = true;
-		if (myThread == null || !myThread.isAlive()) {
+		if (this.myThread == null || !this.myThread.isAlive()) {
 
 			if (this.clientHeartThread == null || !this.clientHeartThread.isAlive()) {
 				this.clientHeartThread = this.config.newClientHeartThread(this);
@@ -105,9 +104,9 @@ public final class ClientControlThread implements Runnable, IBelongControl {
 				}
 			}
 
-			myThread = new Thread(this);
-			myThread.setName("client-" + this.formatInfo());
-			myThread.start();
+			this.myThread = new Thread(this);
+			this.myThread.setName("client-" + this.formatInfo());
+			this.myThread.start();
 		}
 	}
 
@@ -118,11 +117,12 @@ public final class ClientControlThread implements Runnable, IBelongControl {
 	 * @since 2019-07-19 09:24:41
 	 */
 	public void stopClient() {
-		isAlive = false;
+		this.isAlive = false;
 
+		Thread myThread = this.myThread;
 		if (myThread != null) {
+			this.myThread = null;
 			myThread.interrupt();
-			myThread = null;
 		}
 	}
 
@@ -134,28 +134,29 @@ public final class ClientControlThread implements Runnable, IBelongControl {
 	 */
 	public void cancell() {
 
-		stopClient();
+		this.stopClient();
 
-		if (this.clientHeartThread != null) {
+		IClientHeartThread clientHeartThread;
+		if ((clientHeartThread = this.clientHeartThread) != null) {
+			this.clientHeartThread = null;
 			try {
-				this.clientHeartThread.cancel();
+				clientHeartThread.cancel();
 			} catch (Exception e) {
 				// do no thing
 			}
-			this.clientHeartThread = null;
 		}
 
-		if (clientAdapter != null) {
+		IClientAdapter<?, ?> clientAdapter;
+		if ((clientAdapter = this.clientAdapter) != null) {
+			this.clientAdapter = null;
 			try {
 				clientAdapter.close();
 			} catch (Exception e) {
 				// do no thing
 			}
-			this.clientAdapter = null;
 		}
 
-		Set<String> keySet = socketPartMap.keySet();
-		String[] array = keySet.toArray(new String[keySet.size()]);
+		String[] array = this.socketPartMap.keySet().toArray(new String[0]);
 
 		for (String key : array) {
 			stopSocketPart(key);
@@ -171,7 +172,7 @@ public final class ClientControlThread implements Runnable, IBelongControl {
 	 * @return
 	 */
 	public Integer getListenServerPort() {
-		return config.getListenServerPort();
+		return this.config.getListenServerPort();
 	}
 
 	/**
@@ -194,10 +195,7 @@ public final class ClientControlThread implements Runnable, IBelongControl {
 	 * @return
 	 */
 	public boolean isAlive() {
-		if (isAlive) {
-			return true;
-		}
-		return false;
+		return this.isAlive;
 	}
 
 	/**

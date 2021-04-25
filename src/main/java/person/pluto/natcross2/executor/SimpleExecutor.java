@@ -17,12 +17,12 @@ public class SimpleExecutor implements IExecutor {
 
 	@Override
 	public void execute(Runnable runnable) {
-		executor.execute(runnable);
+		this.executor.execute(runnable);
 	}
 
 	@Override
 	public void shutdown() {
-		executor.shutdownNow();
+		this.executor.shutdownNow();
 	}
 
 }

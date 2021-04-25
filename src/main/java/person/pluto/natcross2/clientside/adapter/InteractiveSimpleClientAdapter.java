@@ -89,7 +89,7 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
 	 * @return
 	 */
 	protected AbsSocketPart newSocketPart() {
-		return this.config.newSocketPart(clientControlThread);
+		return this.config.newSocketPart(this.clientControlThread);
 	}
 
 	@Override
@@ -188,13 +188,13 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
 		}
 
 		// 将socket伙伴放入客户端线程进行统一管理
-		clientControlThread.putSocketPart(serverWaitModel.getSocketPartKey(), socketPart);
+		this.clientControlThread.putSocketPart(serverWaitModel.getSocketPartKey(), socketPart);
 		return socketPart.createPassWay();
 	}
 
 	@Override
 	public void waitMessage() throws Exception {
-		InteractiveModel read = socketChannel.read();
+		InteractiveModel read = this.socketChannel.read();
 		NatcrossExecutor.executeClientMessageProc(() -> {
 			this.procMethod(read);
 		});
@@ -212,7 +212,7 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
 		try {
 			boolean procedFlag = false;
 
-			for (IClientHandler<? super InteractiveModel, ? extends InteractiveModel> handler : messageHandlerList) {
+			for (IClientHandler<? super InteractiveModel, ? extends InteractiveModel> handler : this.messageHandlerList) {
 				procedFlag = handler.proc(recvInteractiveModel, this);
 				if (procedFlag) {
 					break;
@@ -223,7 +223,7 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
 				log.warn("无处理方法的信息：[{}]", recvInteractiveModel);
 				InteractiveModel result = InteractiveModel.of(recvInteractiveModel.getInteractiveSeq(),
 						InteractiveTypeEnum.COMMON_REPLY, NatcrossResultEnum.UNKNOW_INTERACTIVE_TYPE.toResultModel());
-				socketChannel.writeAndFlush(result);
+				this.getSocketChannel().writeAndFlush(result);
 			}
 
 		} catch (Exception e) {

@@ -65,8 +65,8 @@ public abstract class AbsSocketPart {
 			return true;
 		}
 
-		long millis = Duration.between(createTime, LocalDateTime.now()).toMillis();
-		return millis < invaildMillis;
+		long millis = Duration.between(this.createTime, LocalDateTime.now()).toMillis();
+		return millis < this.invaildMillis;
 	}
 
 	/**

@@ -25,7 +25,7 @@ public class JsonChannel extends SocketChannel<JSONObject, Object> {
 	private StringChannel channel;
 
 	public JsonChannel() {
-		channel = new StringChannel();
+		this.channel = new StringChannel();
 	}
 
 	public JsonChannel(Socket socket) throws IOException {
@@ -34,7 +34,7 @@ public class JsonChannel extends SocketChannel<JSONObject, Object> {
 
 	@Override
 	public JSONObject read() throws Exception {
-		String read = channel.read();
+		String read = this.channel.read();
 		return JSON.parseObject(read);
 	}
 
@@ -50,17 +50,17 @@ public class JsonChannel extends SocketChannel<JSONObject, Object> {
 
 	@Override
 	public void write(Object value) throws Exception {
-		channel.write(valueConvert(value));
+		this.channel.write(this.valueConvert(value));
 	}
 
 	@Override
 	public void flush() throws Exception {
-		channel.flush();
+		this.channel.flush();
 	}
 
 	@Override
 	public void writeAndFlush(Object value) throws Exception {
-		channel.writeAndFlush(valueConvert(value));
+		this.channel.writeAndFlush(this.valueConvert(value));
 	}
 
 	/**
@@ -71,27 +71,27 @@ public class JsonChannel extends SocketChannel<JSONObject, Object> {
 	 * @return
 	 */
 	public Charset getCharset() {
-		return channel.getCharset();
+		return this.channel.getCharset();
 	}
 
 	@Override
 	public void setCharset(Charset charset) {
-		channel.setCharset(charset);
+		this.channel.setCharset(charset);
 	}
 
 	@Override
 	public Socket getSocket() {
-		return channel.getSocket();
+		return this.channel.getSocket();
 	}
 
 	@Override
 	public void setSocket(Socket socket) throws IOException {
-		channel.setSocket(socket);
+		this.channel.setSocket(socket);
 	}
 
 	@Override
 	public void closeSocket() throws IOException {
-		channel.closeSocket();
+		this.channel.closeSocket();
 	}
 
 }

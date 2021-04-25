@@ -98,9 +98,9 @@ public class NatcrossResultModel implements JSONAware {
     @Override
     public String toJSONString() {
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put("retCod", retCod);
-        jsonObject.put("retMsg", retMsg);
-        jsonObject.put("data", data);
+        jsonObject.put("retCod", this.retCod);
+        jsonObject.put("retMsg", this.retMsg);
+        jsonObject.put("data", this.data);
         return jsonObject.toJSONString();
     }
 }

@@ -41,7 +41,7 @@ public class SimpleClientServiceConfig implements IClientServiceConfig<Interacti
 
 	@Override
 	public Integer getListenPort() {
-		return listenPort;
+		return this.listenPort;
 	}
 
 	@Override
@@ -65,7 +65,7 @@ public class SimpleClientServiceConfig implements IClientServiceConfig<Interacti
 
 	@Override
 	public IClientServiceAdapter getClientServiceAdapter() {
-		return clientServiceAdapter;
+		return this.clientServiceAdapter;
 	}
 
 	@Override
@@ -73,13 +73,13 @@ public class SimpleClientServiceConfig implements IClientServiceConfig<Interacti
 			throws Exception {
 		InteractiveChannel channel = new InteractiveChannel();
 		channel.setSocket(listenSocket);
-		channel.setCharset(charset);
+		channel.setCharset(this.charset);
 		return channel;
 	}
 
 	@Override
 	public Charset getCharset() {
-		return charset;
+		return this.charset;
 	}
 
 	/**

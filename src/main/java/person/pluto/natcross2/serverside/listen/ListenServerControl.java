@@ -3,7 +3,6 @@ package person.pluto.natcross2.serverside.listen;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +19,7 @@ import person.pluto.natcross2.serverside.listen.config.IListenServerConfig;
 @Slf4j
 public class ListenServerControl {
 
-	private static Map<Integer, ServerListenThread> serverListenMap = new ConcurrentHashMap<>();
+	private static final Map<Integer, ServerListenThread> serverListenMap = new ConcurrentHashMap<>();
 
 	/**
 	 ** 加入新的监听服务进程
@@ -100,8 +99,7 @@ public class ListenServerControl {
 	 * @since 2019-07-18 19:00:54
 	 */
 	public static void closeAll() {
-		Set<Integer> keySet = serverListenMap.keySet();
-		Integer[] array = keySet.toArray(new Integer[keySet.size()]);
+		Integer[] array = serverListenMap.keySet().toArray(new Integer[0]);
 		for (Integer key : array) {
 			remove(key);
 		}

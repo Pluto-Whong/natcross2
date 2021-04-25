@@ -80,7 +80,7 @@ public class InteractiveClientConfig implements IClientConfig<InteractiveModel, 
 			return null;
 		}
 
-		interactiveChannel.setCharset(charset);
+		interactiveChannel.setCharset(this.charset);
 
 		return interactiveChannel;
 	}

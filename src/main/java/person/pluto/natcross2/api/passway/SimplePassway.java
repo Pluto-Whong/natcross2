@@ -52,17 +52,21 @@ public class SimplePassway implements Runnable, INioProcesser {
 	private SocketChannel outputChannel;
 
 	private OutputStream getOutputStream() throws IOException {
-		if (Objects.isNull(this.outputStream)) {
-			this.outputStream = sendSocket.getOutputStream();
+		OutputStream outputStream = this.outputStream;
+		if (Objects.isNull(outputStream)) {
+			outputStream = sendSocket.getOutputStream();
+			this.outputStream = outputStream;
 		}
-		return this.outputStream;
+		return outputStream;
 	}
 
 	private SocketChannel getOutputChannel() {
-		if (Objects.isNull(this.outputChannel)) {
-			this.outputChannel = sendSocket.getChannel();
+		SocketChannel outputChannel = this.outputChannel;
+		if (Objects.isNull(outputChannel)) {
+			outputChannel = sendSocket.getChannel();
+			this.outputChannel = outputChannel;
 		}
-		return this.outputChannel;
+		return outputChannel;
 	}
 
 	/**
@@ -81,11 +85,14 @@ public class SimplePassway implements Runnable, INioProcesser {
 	 * @since 2021-04-09 16:37:33
 	 */
 	private void write(ByteBuffer byteBuffer) throws IOException {
-		if (Objects.nonNull(this.getOutputChannel())) {
-			this.getOutputChannel().write(byteBuffer);
+		SocketChannel outputChannel;
+		OutputStream outputStream;
+		if (Objects.nonNull((outputChannel = this.getOutputChannel()))) {
+			outputChannel.write(byteBuffer);
 		} else {
-			this.getOutputStream().write(byteBuffer.array(), byteBuffer.position(), byteBuffer.limit());
-			this.getOutputStream().flush();
+			outputStream = this.getOutputStream();
+			outputStream.write(byteBuffer.array(), byteBuffer.position(), byteBuffer.limit());
+			outputStream.flush();
 		}
 	}
 
@@ -107,7 +114,7 @@ public class SimplePassway implements Runnable, INioProcesser {
 		log.debug("one InputToOutputThread closed");
 
 		// 传输完成后退出
-		this.cancell();
+		this.cancel();
 	}
 
 	// ============== nio =================
@@ -117,6 +124,7 @@ public class SimplePassway implements Runnable, INioProcesser {
 	private ByteBuffer byteBuffer;
 
 	private ByteBuffer obtainByteBuffer() {
+		ByteBuffer byteBuffer = this.byteBuffer;
 		if (Objects.isNull(byteBuffer)) {
 			if (Objects.isNull(this.getOutputChannel())) {
 				byteBuffer = ByteBuffer.allocate(streamCacheSize);
@@ -124,6 +132,7 @@ public class SimplePassway implements Runnable, INioProcesser {
 				// 输入输出可以使用channel，此处则使用DirectByteBuffer，这时候才真正体现出了DMA
 				byteBuffer = ByteBuffer.allocateDirect(streamCacheSize);
 			}
+			this.byteBuffer = byteBuffer;
 		}
 		return byteBuffer;
 	}
@@ -161,7 +170,7 @@ public class SimplePassway implements Runnable, INioProcesser {
 
 		log.debug("one InputToOutputThread closed");
 
-		this.cancell();
+		this.cancel();
 	}
 
 	/**
@@ -172,7 +181,7 @@ public class SimplePassway implements Runnable, INioProcesser {
 	 * @return
 	 */
 	public boolean isValid() {
-		return alive;
+		return this.alive;
 	}
 
 	/**
@@ -181,24 +190,34 @@ public class SimplePassway implements Runnable, INioProcesser {
 	 * @author Pluto
 	 * @since 2020-01-08 15:59:19
 	 */
-	public void cancell() {
+	public void cancel() {
+		if (!this.alive) {
+			return;
+		}
 		this.alive = false;
 
 		NioHallows.release(recvSocket.getChannel());
 
 		try {
-			this.recvSocket.close();
-			this.sendSocket.close();
+			Socket recvSocket;
+			if ((recvSocket = this.recvSocket) != null) {
+				this.recvSocket = null; // help GC
+				recvSocket.close();
+			}
+
+			Socket sendSocket = this.sendSocket;
+			if ((sendSocket = this.sendSocket) != null) {
+				this.sendSocket = null; // help GC
+				sendSocket.close();
+			}
 		} catch (IOException e) {
 			// do no thing
 		}
 
-		if (belongControl != null) {
-			IBelongControl belong = belongControl;
+		IBelongControl belong;
+		if ((belong = belongControl) != null) {
 			belongControl = null;
-			if (belong != null) {
-				belong.noticeStop();
-			}
+			belong.noticeStop();
 		}
 	}
 
@@ -209,18 +228,21 @@ public class SimplePassway implements Runnable, INioProcesser {
 	 * @since 2020-01-08 16:01:02
 	 */
 	public void start() {
-		if (!this.alive) {
-			this.alive = true;
+		if (this.alive) {
+			return;
+		}
+		this.alive = true;
 
-			if (Objects.isNull(recvSocket.getChannel())) {
-				NatcrossExecutor.executePassway(this);
-			} else {
-				try {
-					NioHallows.register(recvSocket.getChannel(), SelectionKey.OP_READ, this);
-				} catch (IOException e) {
-					this.cancell();
-					return;
-				}
+		SocketChannel recvChannel = recvSocket.getChannel();
+		if (Objects.isNull(recvChannel)) {
+			NatcrossExecutor.executePassway(this);
+		} else {
+			try {
+				NioHallows.register(recvChannel, SelectionKey.OP_READ, this);
+			} catch (IOException e) {
+				log.error("nio register faild", e);
+				this.cancel();
+				return;
 			}
 		}
 	}

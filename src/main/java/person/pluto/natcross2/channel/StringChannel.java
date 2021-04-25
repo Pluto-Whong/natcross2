@@ -21,7 +21,7 @@ public class StringChannel extends SocketChannel<String, String> {
 	private Charset charset = StandardCharsets.UTF_8;
 
 	public StringChannel() {
-		channel = new LengthChannel();
+		this.channel = new LengthChannel();
 	}
 
 	public StringChannel(Socket socket) throws IOException {
@@ -30,27 +30,27 @@ public class StringChannel extends SocketChannel<String, String> {
 
 	@Override
 	public String read() throws Exception {
-		byte[] read = channel.read();
-		return new String(read, charset);
+		byte[] read = this.channel.read();
+		return new String(read, this.charset);
 	}
 
 	private byte[] valueConvert(String value) {
-		return value.getBytes(charset);
+		return value.getBytes(this.charset);
 	}
 
 	@Override
 	public void write(String value) throws Exception {
-		channel.write(valueConvert(value));
+		this.channel.write(this.valueConvert(value));
 	}
 
 	@Override
 	public void flush() throws Exception {
-		channel.flush();
+		this.channel.flush();
 	}
 
 	@Override
 	public void writeAndFlush(String value) throws Exception {
-		channel.writeAndFlush(valueConvert(value));
+		this.channel.writeAndFlush(this.valueConvert(value));
 	}
 
 	/**
@@ -61,7 +61,7 @@ public class StringChannel extends SocketChannel<String, String> {
 	 * @return
 	 */
 	public Charset getCharset() {
-		return charset;
+		return this.charset;
 	}
 
 	@Override
@@ -71,17 +71,17 @@ public class StringChannel extends SocketChannel<String, String> {
 
 	@Override
 	public Socket getSocket() {
-		return channel.getSocket();
+		return this.channel.getSocket();
 	}
 
 	@Override
 	public void setSocket(Socket socket) throws IOException {
-		channel.setSocket(socket);
+		this.channel.setSocket(socket);
 	}
 
 	@Override
 	public void closeSocket() throws IOException {
-		channel.closeSocket();
+		this.channel.closeSocket();
 	}
 
 }

@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.charset.Charset;
 import java.util.LinkedHashMap;
 import java.util.Objects;
@@ -130,7 +131,7 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 					// 将缓存中的数据进行字符串化，根据http标准，字符集为 ISO-8859-1
 					String host = new String(byteArray, left, right - left, httpCharset);
 
-					willConnect = routeMap.get(host);
+					willConnect = this.routeMap.get(host);
 
 					break;
 				} else {
@@ -147,6 +148,8 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 		if (Objects.isNull(willConnect)) {
 			willConnect = masterRoute;
 		}
+
+		Socket recvSocket = this.recvSocket;
 
 		InetSocketAddress destAddress = new InetSocketAddress(willConnect.getDestIp(), willConnect.getDestPort());
 		recvSocket.connect(destAddress);
@@ -170,16 +173,16 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 		try {
 			routeHost();
 
-			outToInPassway = new SimplePassway();
+			SimplePassway outToInPassway = this.outToInPassway = new SimplePassway();
 			outToInPassway.setBelongControl(this);
-			outToInPassway.setSendSocket(sendSocket);
-			outToInPassway.setRecvSocket(recvSocket);
+			outToInPassway.setSendSocket(this.sendSocket);
+			outToInPassway.setRecvSocket(this.recvSocket);
 			outToInPassway.setStreamCacheSize(getStreamCacheSize());
 
-			inToOutPassway = new SimplePassway();
+			SimplePassway inToOutPassway = this.inToOutPassway = new SimplePassway();
 			inToOutPassway.setBelongControl(this);
-			inToOutPassway.setSendSocket(recvSocket);
-			inToOutPassway.setRecvSocket(sendSocket);
+			inToOutPassway.setSendSocket(this.recvSocket);
+			inToOutPassway.setRecvSocket(this.sendSocket);
 			inToOutPassway.setStreamCacheSize(getStreamCacheSize());
 
 			outToInPassway.start();
