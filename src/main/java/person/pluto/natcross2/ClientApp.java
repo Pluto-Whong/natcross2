@@ -21,9 +21,9 @@ public class ClientApp {
 
 	public static void main(String[] args) throws Exception {
 //		simple();
-//		secret();
+		secret();
 //		secretAll();
-		secretHttpRoute();
+//		secretHttpRoute();
 	}
 
 	/**
