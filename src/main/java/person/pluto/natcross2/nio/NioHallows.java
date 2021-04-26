@@ -32,10 +32,37 @@ public final class NioHallows implements Runnable {
 
 	public static final NioHallows INSTANCE = new NioHallows();
 
+	/**
+	 * 注册监听动作
+	 * <p>
+	 * 要注意这里只拿最后的一次注册为准，即 {@code channel} 只能与一个 {@code proccesser} 动作对应
+	 *
+	 * @param channel
+	 * @param ops        依据以下值进行或运算进行最后结果设定，并且 {@code channel} 要支持相应的动作
+	 *                   <p>
+	 *                   - {@link SelectionKey#OP_ACCEPT}
+	 *                   <p>
+	 *                   - {@link SelectionKey#OP_CONNECT}
+	 *                   <p>
+	 *                   - {@link SelectionKey#OP_READ}
+	 *                   <p>
+	 *                   - {@link SelectionKey#OP_WRITE}
+	 * @param proccesser 要执行的动作
+	 * @throws IOException
+	 * @author Pluto
+	 * @since 2021-04-26 15:55:38
+	 */
 	public static void register(SelectableChannel channel, int ops, INioProcesser proccesser) throws IOException {
 		INSTANCE.register0(channel, ops, proccesser);
 	}
 
+	/**
+	 * 释放注册
+	 *
+	 * @param channel
+	 * @author Pluto
+	 * @since 2021-04-26 16:03:51
+	 */
 	public static void release(SelectableChannel channel) {
 		INSTANCE.release0(channel);
 	}
@@ -58,6 +85,16 @@ public final class NioHallows implements Runnable {
 	@Getter
 	private long wakeupSleepNanos = 1000000L;
 
+	/**
+	 * 获取 {@link #selector}
+	 * <p>
+	 * 若 {@link #selector} 未有值，则会进行初始化：打开selector，并执行 {@link #start()}
+	 *
+	 * @return
+	 * @throws IOException
+	 * @author Pluto
+	 * @since 2021-04-26 16:04:30
+	 */
 	public Selector getSelector() throws IOException {
 		if (Objects.isNull(this.selector)) {
 			synchronized (this.selectorLock) {
@@ -72,10 +109,40 @@ public final class NioHallows implements Runnable {
 		return this.selector;
 	}
 
+	/**
+	 * 获取唤醒后的 {@link #selector}
+	 * <p>
+	 * 注意，若 {@link #run()} 快于你的任务，还是会被再次阻塞，只是执行了一次 {@link Selector#wakeup()}
+	 *
+	 * @return
+	 * @throws IOException
+	 * @author Pluto
+	 * @since 2021-04-26 16:07:00
+	 */
 	public Selector getWakeupSelector() throws IOException {
 		return this.getSelector().wakeup();
 	}
 
+	/**
+	 * 注册监听动作
+	 * <p>
+	 * 要注意这里只拿最后的一次注册为准，即 {@code channel} 只能与一个 {@code proccesser} 动作对应
+	 *
+	 * @param channel
+	 * @param ops        依据以下值进行或运算进行最后结果设定，并且 {@code channel} 要支持相应的动作
+	 *                   <p>
+	 *                   - {@link SelectionKey#OP_ACCEPT}
+	 *                   <p>
+	 *                   - {@link SelectionKey#OP_CONNECT}
+	 *                   <p>
+	 *                   - {@link SelectionKey#OP_READ}
+	 *                   <p>
+	 *                   - {@link SelectionKey#OP_WRITE}
+	 * @param proccesser 要执行的动作
+	 * @throws IOException
+	 * @author Pluto
+	 * @since 2021-04-26 15:55:38
+	 */
 	public void register0(SelectableChannel channel, int ops, INioProcesser proccesser) throws IOException {
 		Objects.requireNonNull(channel, "channel non null");
 		try {
@@ -93,6 +160,13 @@ public final class NioHallows implements Runnable {
 		}
 	}
 
+	/**
+	 * 释放注册
+	 *
+	 * @param channel
+	 * @author Pluto
+	 * @since 2021-04-26 16:03:51
+	 */
 	public void release0(SelectableChannel channel) {
 		if (Objects.isNull(channel)) {
 			return;
@@ -148,6 +222,12 @@ public final class NioHallows implements Runnable {
 		}
 	}
 
+	/**
+	 * 启动nio事件监听
+	 *
+	 * @author Pluto
+	 * @since 2021-04-26 16:33:07
+	 */
 	public void start() {
 		this.alive = true;
 		if (this.myThread == null || !this.myThread.isAlive()) {
@@ -159,6 +239,12 @@ public final class NioHallows implements Runnable {
 		}
 	}
 
+	/**
+	 * 退出nio事件监听
+	 *
+	 * @author Pluto
+	 * @since 2021-04-26 16:33:33
+	 */
 	public void cancel() {
 		log.info("NioHallows cancell");
 

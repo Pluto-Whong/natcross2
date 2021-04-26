@@ -24,6 +24,13 @@ public class ProcesserHolder {
 
 	private INioProcesser processer;
 
+	/**
+	 * 执行事件的任务
+	 *
+	 * @param key
+	 * @author Pluto
+	 * @since 2021-04-26 16:35:36
+	 */
 	public void proccess(SelectionKey key) {
 		this.processer.proccess(key);
 		if (key.isValid()) {

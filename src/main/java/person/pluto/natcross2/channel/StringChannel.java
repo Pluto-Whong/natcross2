@@ -5,6 +5,8 @@ import java.net.Socket;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
+import person.pluto.natcross2.model.InteractiveModel;
+
 /**
  * 
  * <p>
@@ -34,6 +36,15 @@ public class StringChannel extends SocketChannel<String, String> {
 		return new String(read, this.charset);
 	}
 
+	/**
+	 * 统一数据转换方法，使 {@link #write(InteractiveModel)} 与
+	 * {@link #writeAndFlush(InteractiveModel)} 转换结果保持一致
+	 *
+	 * @param value
+	 * @return
+	 * @author Pluto
+	 * @since 2021-04-26 16:45:44
+	 */
 	private byte[] valueConvert(String value) {
 		return value.getBytes(this.charset);
 	}

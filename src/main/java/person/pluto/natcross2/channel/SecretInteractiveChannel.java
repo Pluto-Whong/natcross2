@@ -71,6 +71,16 @@ public class SecretInteractiveChannel extends SocketChannel<InteractiveModel, In
 		return secretInteractiveModel;
 	}
 
+	/**
+	 * 统一数据转换方法，使 {@link #write(InteractiveModel)} 与
+	 * {@link #writeAndFlush(InteractiveModel)} 转换结果保持一致
+	 *
+	 * @param value
+	 * @return
+	 * @throws Exception
+	 * @author Pluto
+	 * @since 2021-04-26 16:44:14
+	 */
 	private Object valueConvert(InteractiveModel value) throws Exception {
 		SecretInteractiveModel secretInteractiveModel = new SecretInteractiveModel(value);
 		secretInteractiveModel.setCharset(this.getCharset().name());

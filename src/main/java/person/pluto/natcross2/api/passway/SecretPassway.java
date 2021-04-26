@@ -29,10 +29,17 @@ import person.pluto.natcross2.nio.NioHallows;
 @Slf4j
 public class SecretPassway implements Runnable {
 
+	/**
+	 * 通道模式
+	 */
 	public static enum Mode {
-		// 从无加密接受到加密输出
+		/**
+		 * 从无加密接受到加密输出
+		 */
 		noToSecret,
-		// 从加密接受到无加密输出
+		/**
+		 * 从加密接受到无加密输出
+		 */
 		secretToNo
 	}
 

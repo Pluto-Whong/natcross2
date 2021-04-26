@@ -12,6 +12,16 @@ import person.pluto.natcross2.channel.SocketChannel;
  */
 public interface IRecvHandler<R, W> {
 
+	/**
+	 * 处理方法
+	 *
+	 * @param model
+	 * @param channel
+	 * @return
+	 * @throws Exception
+	 * @author Pluto
+	 * @since 2021-04-26 17:25:19
+	 */
     boolean proc(R model, SocketChannel<? extends R, ? super W> channel) throws Exception;
 
 }

@@ -127,6 +127,12 @@ public class SecretSocketPart extends AbsSocketPart implements IBelongControl {
 		return true;
 	}
 
+	/**
+	 * 停止
+	 *
+	 * @author Pluto
+	 * @since 2021-04-26 16:42:38
+	 */
 	public void stop() {
 		this.cancel();
 

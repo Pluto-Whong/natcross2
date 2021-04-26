@@ -30,55 +30,66 @@ public interface IExecutor {
 	public void execute(Runnable runnable);
 
 	/**
-	 * 执行服务监听新端口任务
+	 * 服务监听线程任务执行器
+	 * <p>
+	 * For {@link person.pluto.natcross2.serverside.listen.ServerListenThread}
 	 *
 	 * @param runnable
 	 * @author Pluto
-	 * @since 2021-04-08 15:03:20
+	 * @since 2021-04-26 16:49:08
 	 */
 	default public void executeServerListenAccept(Runnable runnable) {
 		execute(runnable);
 	}
 
 	/**
-	 * 指定控制端口新端口任务
-	 * 
+	 * 客户端监听线程任务执行器
+	 * <p>
+	 * For {@link person.pluto.natcross2.serverside.client.ClientServiceThread}
+	 *
 	 * @param runnable
 	 * @author Pluto
-	 * @since 2021-04-08 17:51:37
+	 * @since 2021-04-26 16:49:28
 	 */
 	default public void executeClientServiceAccept(Runnable runnable) {
 		execute(runnable);
 	}
 
 	/**
-	 * 执行 客户端消息任务
-	 * 
+	 * 客户端消息处理任务执行器
+	 * <p>
+	 * For
+	 * {@link person.pluto.natcross2.clientside.adapter.InteractiveSimpleClientAdapter#waitMessage()}
+	 *
 	 * @param runnable
 	 * @author Pluto
-	 * @since 2021-04-09 12:21:47
+	 * @since 2021-04-26 16:49:48
 	 */
 	default public void executeClientMessageProc(Runnable runnable) {
 		execute(runnable);
 	}
 
 	/**
-	 * 执行 隧道 线程
-	 * 
+	 * 隧道线程执行器
+	 * <p>
+	 * For {@link person.pluto.natcross2.api.passway.*}
+	 *
 	 * @param runnable
 	 * @author Pluto
-	 * @since 2021-04-09 13:21:11
+	 * @since 2021-04-26 16:50:40
 	 */
 	default public void executePassway(Runnable runnable) {
 		execute(runnable);
 	}
 
 	/**
-	 * 执行nio容器中的方法
-	 * 
+	 * nio事件任务执行器
+	 * <p>
+	 * For {@link person.pluto.natcross2.nio.NioHallows#run()}
+	 *
 	 * @param runnable
 	 * @author Pluto
-	 * @since 2021-04-13 10:04:17
+	 * @since 2021-04-26 16:50:56
 	 */
 	default public void executeNioAction(Runnable runnable) {
 		execute(runnable);

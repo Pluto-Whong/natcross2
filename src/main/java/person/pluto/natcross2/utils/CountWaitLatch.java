@@ -56,36 +56,65 @@ public class CountWaitLatch {
 
 	private final Sync sync;
 
+	/**
+	 * count == 0
+	 */
 	public CountWaitLatch() {
 		this(0);
 	}
 
+	/**
+	 * @param count >=0
+	 */
 	public CountWaitLatch(int count) {
 		if (count < 0)
 			throw new IllegalArgumentException("count < 0");
 		this.sync = new Sync(count);
 	}
 
+	/**
+	 * 等待释放
+	 *
+	 * @throws InterruptedException
+	 */
 	public void await() throws InterruptedException {
 		sync.acquireSharedInterruptibly(0);
 	}
 
+	/**
+	 * 等待释放
+	 *
+	 * @param timeout
+	 * @param unit
+	 * @return
+	 * @throws InterruptedException
+	 */
 	public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
 		return sync.tryAcquireSharedNanos(0, unit.toNanos(timeout));
 	}
 
+	/**
+	 * count++
+	 */
 	public void countUp() {
 		sync.acquireShared(1);
 	}
 
+	/**
+	 * --count >= 0
+	 */
 	public void countDown() {
 		sync.releaseShared(1);
 	}
 
+	/**
+	 * count >= 0
+	 */
 	public long getCount() {
 		return sync.getCount();
 	}
 
+	@Override
 	public String toString() {
 		return super.toString() + "[Count = " + sync.getCount() + "]";
 	}

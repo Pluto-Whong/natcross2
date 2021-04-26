@@ -16,20 +16,27 @@ import person.pluto.natcross2.utils.AESUtil;
 @Data
 public class AESSecret implements ISecret {
 
-    private Key aesKey;
+	private Key aesKey;
 
-    @Override
-    public byte[] encrypt(byte[] content, int offset, int len) throws Exception {
-        return AESUtil.encrypt(aesKey, content, offset, len);
-    }
+	@Override
+	public byte[] encrypt(byte[] content, int offset, int len) throws Exception {
+		return AESUtil.encrypt(aesKey, content, offset, len);
+	}
 
-    @Override
-    public byte[] decrypt(byte[] result) throws Exception {
-        return AESUtil.decrypt(aesKey, result);
-    }
+	@Override
+	public byte[] decrypt(byte[] result) throws Exception {
+		return AESUtil.decrypt(aesKey, result);
+	}
 
-    public void setBaseAesKey(String aesKey) {
-        this.aesKey = AESUtil.createKeyByBase64(aesKey);
-    }
+	/**
+	 * 设置密钥
+	 *
+	 * @param aesKey
+	 * @author Pluto
+	 * @since 2021-04-26 16:39:21
+	 */
+	public void setBaseAesKey(String aesKey) {
+		this.aesKey = AESUtil.createKeyByBase64(aesKey);
+	}
 
 }

@@ -11,8 +11,28 @@ package person.pluto.natcross2.api.secret;
  */
 public interface ISecret {
 
-    byte[] encrypt(byte[] content, int offset, int len) throws Exception;
+	/**
+	 * 加密数据
+	 *
+	 * @param content
+	 * @param offset
+	 * @param len
+	 * @return
+	 * @throws Exception
+	 * @author Pluto
+	 * @since 2021-04-26 16:38:46
+	 */
+	byte[] encrypt(byte[] content, int offset, int len) throws Exception;
 
-    byte[] decrypt(byte[] result) throws Exception;
+	/**
+	 * 解密数据
+	 *
+	 * @param result
+	 * @return
+	 * @throws Exception
+	 * @author Pluto
+	 * @since 2021-04-26 16:39:07
+	 */
+	byte[] decrypt(byte[] result) throws Exception;
 
 }
