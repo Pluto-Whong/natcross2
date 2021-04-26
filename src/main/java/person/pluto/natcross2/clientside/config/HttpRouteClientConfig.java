@@ -3,14 +3,18 @@ package person.pluto.natcross2.clientside.config;
 import java.net.Socket;
 import java.nio.channels.spi.SelectorProvider;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.commons.lang3.StringUtils;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import person.pluto.natcross2.api.IHttpRouting;
 import person.pluto.natcross2.api.socketpart.AbsSocketPart;
 import person.pluto.natcross2.api.socketpart.HttpRouteSocketPart;
 import person.pluto.natcross2.channel.SocketChannel;
@@ -23,6 +27,7 @@ import person.pluto.natcross2.clientside.handler.ServerWaitClientHandler;
 import person.pluto.natcross2.clientside.heart.IClientHeartThread;
 import person.pluto.natcross2.model.HttpRoute;
 import person.pluto.natcross2.model.InteractiveModel;
+import person.pluto.natcross2.utils.Assert;
 
 /**
  * 
@@ -34,10 +39,11 @@ import person.pluto.natcross2.model.InteractiveModel;
  * @since 2020-04-24 10:09:46
  */
 @Slf4j
-public class HttpRouteClientConfig extends InteractiveClientConfig {
+public class HttpRouteClientConfig extends InteractiveClientConfig implements IHttpRouting {
 
-	private InteractiveClientConfig baseConfig;
+	private final InteractiveClientConfig baseConfig;
 
+	@Getter
 	private HttpRoute masterRoute = null;
 	private LinkedHashMap<String, HttpRoute> routeMap = new LinkedHashMap<>();
 
@@ -63,13 +69,26 @@ public class HttpRouteClientConfig extends InteractiveClientConfig {
 		Objects.requireNonNull(masterRoute, "主路由不得为空");
 		Objects.requireNonNull(routeMap, "路由表不得为null");
 
+		LinkedHashMap<String, HttpRoute> routeMapTemp = new LinkedHashMap<>(routeMap);
+
 		ReentrantReadWriteLock routeLock = this.routeLock;
 		routeLock.writeLock().lock();
 
 		this.masterRoute = masterRoute;
-		this.routeMap = routeMap;
+		this.routeMap = routeMapTemp;
 
 		routeLock.writeLock().unlock();
+	}
+
+	/**
+	 * 获取路由表
+	 *
+	 * @return {@link Collections#unmodifiableMap(Map)} 不得对对象进行修改
+	 * @author Pluto
+	 * @since 2021-04-26 09:36:28
+	 */
+	public Map<String, HttpRoute> getRouteMap() {
+		return Collections.unmodifiableMap(this.routeMap);
 	}
 
 	/**
@@ -191,7 +210,7 @@ public class HttpRouteClientConfig extends InteractiveClientConfig {
 		ReentrantReadWriteLock routeLock = this.routeLock;
 		routeLock.readLock().lock();
 		try {
-			httpRouteSocketPart = new HttpRouteSocketPart(clientControlThread, this.masterRoute, this.routeMap);
+			httpRouteSocketPart = new HttpRouteSocketPart(clientControlThread, this);
 		} finally {
 			routeLock.readLock().unlock();
 		}
@@ -200,6 +219,42 @@ public class HttpRouteClientConfig extends InteractiveClientConfig {
 
 		return httpRouteSocketPart;
 	}
+
+	@Override
+	public HttpRoute pickRouteByHost(String host) {
+		ReentrantReadWriteLock routeLock = this.routeLock;
+		routeLock.readLock().lock();
+		try {
+			return this.routeMap.get(host);
+		} finally {
+			routeLock.readLock().unlock();
+		}
+	}
+
+	@Override
+	public HttpRoute pickMasterRoute() {
+		return this.masterRoute;
+	}
+
+	@Override
+	public HttpRoute pickEffectiveRoute(String host) {
+		HttpRoute httpRoute;
+
+		ReentrantReadWriteLock routeLock = this.routeLock;
+		routeLock.readLock().lock();
+		try {
+			httpRoute = this.routeMap.get(host);
+			if (Objects.isNull(httpRoute)) {
+				httpRoute = this.masterRoute;
+			}
+		} finally {
+			routeLock.readLock().unlock();
+		}
+
+		Assert.state(Objects.nonNull(httpRoute), "未能获取有效的路由");
+
+		return httpRoute;
+	};
 
 	@Override
 	public Socket newDestSocket() throws Exception {
@@ -276,6 +331,6 @@ public class HttpRouteClientConfig extends InteractiveClientConfig {
 	@Override
 	public void setStreamCacheSize(int streamCacheSize) {
 		this.baseConfig.setStreamCacheSize(streamCacheSize);
-	};
+	}
 
 }

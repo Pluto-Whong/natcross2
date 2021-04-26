@@ -7,11 +7,10 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.Charset;
-import java.util.LinkedHashMap;
-import java.util.Objects;
 
 import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.api.IBelongControl;
+import person.pluto.natcross2.api.IHttpRouting;
 import person.pluto.natcross2.api.passway.SimplePassway;
 import person.pluto.natcross2.model.HttpRoute;
 import person.pluto.natcross2.utils.Tools;
@@ -34,21 +33,11 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 	private static final byte[] hostMatcher = new byte[] { 'h', 'o', 's', 't', colonByte };
 	private static final int colonIndex = hostMatcher.length - 1;
 
-	private final HttpRoute masterRoute;
-	private final LinkedHashMap<String, HttpRoute> routeMap = new LinkedHashMap<>();
+	private final IHttpRouting httpRouting;
 
-	/**
-	 * 因为socketPart是一对连接一次，为了减少计算量，进行预设值
-	 * 
-	 * @param belongThread
-	 * @param masterRoute
-	 * @param routeMap
-	 */
-	public HttpRouteSocketPart(IBelongControl belongThread, HttpRoute masterRoute,
-			LinkedHashMap<String, HttpRoute> routeMap) {
+	public HttpRouteSocketPart(IBelongControl belongThread, IHttpRouting httpRouting) {
 		super(belongThread);
-		this.masterRoute = Objects.requireNonNull(masterRoute, "主路由设置不得为空");
-		this.routeMap.putAll(Objects.requireNonNull(routeMap, "路由表不得为null"));
+		this.httpRouting = httpRouting;
 	}
 
 	/**
@@ -122,7 +111,8 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 						if (byteArray[left] == ' ') {
 							// 左边先去掉空白，去除期间right不用判断
 							left++;
-						} else if (byteArray[right] == colonByte || byteArray[right] == ' ') {
+						} else if (byteArray[right] == colonByte || byteArray[right] == ' ' || byteArray[right] == '\r'
+								|| byteArray[right] == '\n') {
 							// right位置到left位置必有字符，遇到空白或 : 则停下，与left中间的组合为host地址
 							break;
 						}
@@ -131,7 +121,7 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 					// 将缓存中的数据进行字符串化，根据http标准，字符集为 ISO-8859-1
 					String host = new String(byteArray, left, right - left, httpCharset);
 
-					willConnect = this.routeMap.get(host);
+					willConnect = this.httpRouting.pickEffectiveRoute(host);
 
 					break;
 				} else {
@@ -144,10 +134,6 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 
 		// 将最后残留的输出
 		lineBufferStream.writeTo(headerBufferStream);
-
-		if (Objects.isNull(willConnect)) {
-			willConnect = masterRoute;
-		}
 
 		Socket recvSocket = this.recvSocket;
 
