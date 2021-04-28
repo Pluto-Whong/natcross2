@@ -1,6 +1,7 @@
 package person.pluto.natcross2.executor;
 
 import java.util.Objects;
+import java.util.concurrent.ScheduledFuture;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -27,15 +28,18 @@ public final class NatcrossExecutor {
 
 	/**
 	 * 重设执行器
+	 * <p>
+	 * 会将旧的执行器进行执行 {@link IExecutor#shutdown()} 方法，建议重设执行器的操作在初始化程序时
 	 *
 	 * @param executor
 	 * @author Pluto
 	 * @since 2021-04-08 14:59:04
 	 */
 	public static void resetExecutor(IExecutor executor) {
-		if (Objects.nonNull(INSTANCE)) {
+		IExecutor oldExecutor = INSTANCE;
+		if (Objects.nonNull(oldExecutor)) {
 			try {
-				INSTANCE.shutdown();
+				oldExecutor.shutdown();
 			} catch (Exception e) {
 				//
 			}
@@ -107,6 +111,31 @@ public final class NatcrossExecutor {
 	 */
 	public static void executeNioAction(Runnable runnable) {
 		INSTANCE.executeNioAction(runnable);
+	}
+
+	/**
+	 * 心跳检测定时循环任务执行
+	 * 
+	 * @param runnable
+	 * @param delaySeconds
+	 * @author Pluto
+	 * @since 2021-04-28 14:13:47
+	 */
+	public static ScheduledFuture<?> scheduledClientHeart(Runnable runnable, long delaySeconds) {
+		return INSTANCE.scheduledClientHeart(runnable, delaySeconds);
+	}
+
+	/**
+	 * 服务监听清理无效socket对
+	 * 
+	 * @param runnable
+	 * @param delaySeconds
+	 * @return
+	 * @author Pluto
+	 * @since 2021-04-28 15:22:11
+	 */
+	public static ScheduledFuture<?> scheduledClearInvalidSocketPart(Runnable runnable, long delaySeconds) {
+		return INSTANCE.scheduledClearInvalidSocketPart(runnable, delaySeconds);
 	}
 
 }

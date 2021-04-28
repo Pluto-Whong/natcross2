@@ -44,6 +44,15 @@ public class InteractiveClientConfig implements IClientConfig<InteractiveModel, 
 	private Charset charset = StandardCharsets.UTF_8;
 	private int streamCacheSize = 8196;
 
+	/**
+	 * 心跳检测间隔（s）
+	 */
+	private long heartIntervalSeconds = 10L;
+	/**
+	 * 尝试重连次数，若超过则中断链接
+	 */
+	private int tryReclientCount = 10;
+
 	@Override
 	public void setDestIpPort(String destIp, Integer destPort) {
 		this.destIp = destIp;
@@ -53,6 +62,8 @@ public class InteractiveClientConfig implements IClientConfig<InteractiveModel, 
 	@Override
 	public IClientHeartThread newClientHeartThread(ClientControlThread clientControlThread) {
 		ClientHeartThread clientHeartThread = new ClientHeartThread(clientControlThread);
+		clientHeartThread.setHeartIntervalSeconds(this.heartIntervalSeconds);
+		clientHeartThread.setTryReclientCount(this.tryReclientCount);
 		return clientHeartThread;
 	}
 

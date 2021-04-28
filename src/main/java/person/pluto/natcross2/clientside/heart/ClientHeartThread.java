@@ -1,9 +1,13 @@
 package person.pluto.natcross2.clientside.heart;
 
-import java.util.concurrent.TimeUnit;
+import java.util.Objects;
+import java.util.concurrent.ScheduledFuture;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.clientside.ClientControlThread;
+import person.pluto.natcross2.executor.NatcrossExecutor;
 
 /**
  * 
@@ -17,14 +21,20 @@ import person.pluto.natcross2.clientside.ClientControlThread;
 @Slf4j
 public class ClientHeartThread implements IClientHeartThread, Runnable {
 
-	private volatile Thread myThread = null;
+	private final ClientControlThread clientControlThread;
 
 	private volatile boolean isAlive = false;
 
-	private ClientControlThread clientControlThread;
-
+	@Setter
+	@Getter
 	private long heartIntervalSeconds = 10L;
+	@Setter
+	@Getter
 	private int tryReclientCount = 10;
+
+	private volatile ScheduledFuture<?> scheduledFuture;
+
+	private int failCount = 0;
 
 	public ClientHeartThread(ClientControlThread clientControlThread) {
 		this.clientControlThread = clientControlThread;
@@ -34,82 +44,79 @@ public class ClientHeartThread implements IClientHeartThread, Runnable {
 	public void run() {
 		ClientControlThread clientControlThread = this.clientControlThread;
 
-		int failCount = 0;
+		log.debug("send client heart data to {}", clientControlThread.getListenServerPort());
+		try {
+			clientControlThread.sendUrgentData();
+			this.failCount = 0;
 
-		while (this.isAlive) {
-			try {
-				TimeUnit.SECONDS.sleep(this.heartIntervalSeconds);
-			} catch (InterruptedException e) {
-				this.cancel();
-				return;
-			}
-			try {
-				log.debug("send urgent data to {}", clientControlThread.getListenServerPort());
-				clientControlThread.sendUrgentData();
-				failCount = 0;
-			} catch (Exception e) {
-				log.warn("{} 心跳异常，即将重新连接", clientControlThread.getListenServerPort());
-				this.clientControlThread.stopClient();
+			return;
+		} catch (Exception e) {
+			log.warn("{} 心跳异常", clientControlThread.getListenServerPort());
+			clientControlThread.stopClient();
+		}
+		if (!this.isAlive) {
+			return;
+		}
 
-				if (this.isAlive) {
-					failCount++;
-					try {
-						boolean createControl = clientControlThread.createControl();
-						if (createControl) {
-							clientControlThread.start();
-							log.info("重新建立连接 {} 成功，在第 {} 次", clientControlThread.getListenServerPort(), failCount);
-							continue;
-						}
-					} catch (Exception reClientException) {
-						log.warn("重新建立连接" + clientControlThread.getListenServerPort() + "失败第 " + failCount + " 次",
-								reClientException);
-					}
+		this.failCount++;
 
-					log.warn("重新建立连接" + clientControlThread.getListenServerPort() + "失败第 " + failCount + " 次");
+		boolean createControl = false, logFlag = true;
+		try {
+			createControl = clientControlThread.createControl();
+		} catch (Exception reClientException) {
+			log.warn("重新建立连接" + clientControlThread.getListenServerPort() + "失败第 " + this.failCount + " 次",
+					reClientException);
+			logFlag = false;
+		}
 
-					if (failCount >= this.tryReclientCount) {
-						log.error("尝试重新连接 {} 超过最大次数，尝试关闭客户端", clientControlThread.getListenServerPort());
-						this.cancel();
-						clientControlThread.cancell();
-						log.info("尝试重新连接 {} 超过最大次数，关闭客户端成功", clientControlThread.getListenServerPort());
-					}
-				}
-			}
+		if (createControl) {
+			log.info("重新建立连接 {} 成功，在第 {} 次", clientControlThread.getListenServerPort(), this.failCount);
+
+			clientControlThread.start();
+
+			this.failCount = 0;
+			return;
+		}
+
+		if (logFlag) {
+			log.warn("重新建立连接" + clientControlThread.getListenServerPort() + "失败第 " + this.failCount + " 次");
+		}
+
+		if (this.failCount >= this.tryReclientCount) {
+			log.error("尝试重新连接 {} 超过最大次数，关闭客户端", clientControlThread.getListenServerPort());
+			clientControlThread.cancell();
+			this.cancel();
 		}
 	}
 
 	@Override
-	public void start() {
+	public synchronized void start() {
 		this.isAlive = true;
-		if (this.myThread == null || !this.myThread.isAlive()) {
-			this.myThread = new Thread(this);
-			this.myThread.setName("client-heart-" + clientControlThread.formatInfo());
-			this.myThread.start();
+
+		ScheduledFuture<?> scheduledFuture = this.scheduledFuture;
+		if (Objects.isNull(scheduledFuture) || scheduledFuture.isCancelled()) {
+			this.failCount = 0;
+			this.scheduledFuture = NatcrossExecutor.scheduledClientHeart(this, this.heartIntervalSeconds);
 		}
 	}
 
 	@Override
 	public void cancel() {
+		if (!this.isAlive) {
+			return;
+		}
 		this.isAlive = false;
 
-		Thread myThread;
-		if ((myThread = this.myThread) != null) {
-			this.myThread = null;
-			myThread.interrupt();
+		ScheduledFuture<?> scheduledFuture = this.scheduledFuture;
+		if (Objects.nonNull(scheduledFuture) && !scheduledFuture.isCancelled()) {
+			this.scheduledFuture = null;
+			scheduledFuture.cancel(false);
 		}
 	}
 
 	@Override
 	public boolean isAlive() {
 		return this.isAlive;
-	}
-
-	public void setHeartIntervalSeconds(long heartIntervalSeconds) {
-		this.heartIntervalSeconds = heartIntervalSeconds;
-	}
-
-	public void setTryReclientCount(int tryReclientCount) {
-		this.tryReclientCount = tryReclientCount;
 	}
 
 }

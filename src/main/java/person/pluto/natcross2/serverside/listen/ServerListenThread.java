@@ -294,8 +294,6 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 			AbsSocketPart socketPart = this.socketPartMap.get(key);
 			if (socketPart != null && !socketPart.isValid()) {
 				stopSocketPart(key);
-			} else {
-				socketPartMap.remove(key);
 			}
 		}
 

@@ -1,5 +1,7 @@
 package person.pluto.natcross2.executor;
 
+import java.util.concurrent.ScheduledFuture;
+
 /**
  * 
  * <p>
@@ -94,5 +96,26 @@ public interface IExecutor {
 	default public void executeNioAction(Runnable runnable) {
 		execute(runnable);
 	}
+
+	/**
+	 * 心跳检测定时循环任务执行
+	 * 
+	 * @param runnable
+	 * @param delaySeconds
+	 * @author Pluto
+	 * @since 2021-04-28 14:13:47
+	 */
+	public ScheduledFuture<?> scheduledClientHeart(Runnable runnable, long delaySeconds);
+
+	/**
+	 * 服务监听清理无效socket对
+	 * 
+	 * @param runnable
+	 * @param delaySeconds
+	 * @return
+	 * @author Pluto
+	 * @since 2021-04-28 15:22:11
+	 */
+	public ScheduledFuture<?> scheduledClearInvalidSocketPart(Runnable runnable, long delaySeconds);
 
 }

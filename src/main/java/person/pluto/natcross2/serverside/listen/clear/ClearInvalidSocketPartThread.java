@@ -1,11 +1,12 @@
 package person.pluto.natcross2.serverside.listen.clear;
 
-import java.util.concurrent.TimeUnit;
+import java.util.Objects;
+import java.util.concurrent.ScheduledFuture;
 
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import person.pluto.natcross2.executor.NatcrossExecutor;
 import person.pluto.natcross2.serverside.listen.ServerListenThread;
 
 /**
@@ -18,64 +19,47 @@ import person.pluto.natcross2.serverside.listen.ServerListenThread;
  * @since 2019-08-21 12:59:03
  */
 @Slf4j
-@NoArgsConstructor
 public class ClearInvalidSocketPartThread implements IClearInvalidSocketPartThread {
 
-	private volatile Thread myThread = null;
+	private final ServerListenThread serverListenThread;
 
-	private volatile boolean isAlive = false;
-
-	private ServerListenThread serverListenThread;
+	private ScheduledFuture<?> scheduledFuture;
 
 	/**
 	 * 清理间隔
 	 */
 	@Setter
 	@Getter
-	private Long clearIntervalSeconds = 10L;
+	private long clearIntervalSeconds = 10L;
 
 	public ClearInvalidSocketPartThread(ServerListenThread serverListenThread) {
-		this.setServerListenThread(serverListenThread);
+		this.serverListenThread = serverListenThread;
 	}
 
 	@Override
 	public void run() {
-		while (this.isAlive) {
-			this.serverListenThread.clearInvaildSocketPart();
-
-			try {
-				TimeUnit.SECONDS.sleep(this.clearIntervalSeconds);
-			} catch (InterruptedException e) {
-				// do no thing
-			}
-		}
+		this.serverListenThread.clearInvaildSocketPart();
 	}
 
 	@Override
-	public void start() {
-		this.isAlive = true;
-		if (this.myThread == null || !this.myThread.isAlive()) {
-			this.myThread = new Thread(this);
-			this.myThread.setName("clear-invalid-socket-part-" + serverListenThread.formatInfo());
-			this.myThread.start();
+	public synchronized void start() {
+		ScheduledFuture<?> scheduledFuture = this.scheduledFuture;
+		if (Objects.isNull(scheduledFuture) || scheduledFuture.isCancelled()) {
+			this.scheduledFuture = NatcrossExecutor.scheduledClearInvalidSocketPart(this, this.clearIntervalSeconds);
 		}
+
 		log.info("ClearInvalidSocketPartThread for [{}] started !", this.serverListenThread.getListenPort());
 	}
 
 	@Override
 	public void cancel() {
-		this.isAlive = false;
-		Thread myThread;
-		if ((myThread = this.myThread) != null) {
-			this.myThread = null;
-			myThread.interrupt();
+		ScheduledFuture<?> scheduledFuture = this.scheduledFuture;
+		if (Objects.nonNull(scheduledFuture) && !scheduledFuture.isCancelled()) {
+			this.scheduledFuture = null;
+			scheduledFuture.cancel(false);
 		}
-		log.info("ClearInvalidSocketPartThread for [{}] cancell !", this.serverListenThread.getListenPort());
-	}
 
-	@Override
-	public void setServerListenThread(ServerListenThread serverListenThread) {
-		this.serverListenThread = serverListenThread;
+		log.info("ClearInvalidSocketPartThread for [{}] cancell !", this.serverListenThread.getListenPort());
 	}
 
 }

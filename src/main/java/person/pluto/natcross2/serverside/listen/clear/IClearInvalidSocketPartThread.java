@@ -1,7 +1,5 @@
 package person.pluto.natcross2.serverside.listen.clear;
 
-import person.pluto.natcross2.serverside.listen.ServerListenThread;
-
 /**
  * 
  * <p>
@@ -13,29 +11,20 @@ import person.pluto.natcross2.serverside.listen.ServerListenThread;
  */
 public interface IClearInvalidSocketPartThread extends Runnable {
 
-    /**
-     * 设置附属的穿透线程
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:50:22
-     * @param serverListenThread
-     */
-    void setServerListenThread(ServerListenThread serverListenThread);
+	/**
+	 * 启动
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 16:50:46
+	 */
+	void start();
 
-    /**
-     * 启动
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:50:46
-     */
-    void start();
-
-    /**
-     * 退出
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:50:51
-     */
-    void cancel();
+	/**
+	 * 退出
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 16:50:51
+	 */
+	void cancel();
 
 }
