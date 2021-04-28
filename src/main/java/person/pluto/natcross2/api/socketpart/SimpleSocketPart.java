@@ -32,18 +32,6 @@ public class SimpleSocketPart extends AbsSocketPart implements IBelongControl {
 		super(belongThread);
 	}
 
-	@Override
-	public boolean isValid() {
-		if (super.isValid()) {
-			if (this.outToInPassway == null || !this.outToInPassway.isValid() || this.inToOutPassway == null
-					|| !this.inToOutPassway.isValid()) {
-				return false;
-			}
-			return this.isAlive;
-		}
-		return false;
-	}
-
 	/**
 	 ** 停止，并告知上层处理掉
 	 *
@@ -69,6 +57,17 @@ public class SimpleSocketPart extends AbsSocketPart implements IBelongControl {
 
 		log.debug("socketPart {} will cancel", this.socketPartKey);
 
+		SimplePassway outToInPassway;
+		if ((outToInPassway = this.outToInPassway) != null) {
+			this.outToInPassway = null;
+			outToInPassway.cancel();
+		}
+		SimplePassway inToOutPassway;
+		if ((inToOutPassway = this.inToOutPassway) != null) {
+			this.inToOutPassway = null;
+			inToOutPassway.cancel();
+		}
+
 		Socket recvSocket;
 		if ((recvSocket = this.recvSocket) != null) {
 			this.recvSocket = null;
@@ -87,17 +86,6 @@ public class SimpleSocketPart extends AbsSocketPart implements IBelongControl {
 			} catch (IOException e) {
 				log.debug("socketPart [{}] 发送端口 关闭异常", socketPartKey);
 			}
-		}
-
-		SimplePassway outToInPassway;
-		if ((outToInPassway = this.outToInPassway) != null) {
-			this.outToInPassway = null;
-			outToInPassway.cancel();
-		}
-		SimplePassway inToOutPassway;
-		if ((inToOutPassway = this.inToOutPassway) != null) {
-			this.inToOutPassway = null;
-			inToOutPassway.cancel();
 		}
 
 		log.debug("socketPart {} is cancelled", this.socketPartKey);

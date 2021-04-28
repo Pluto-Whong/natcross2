@@ -39,19 +39,6 @@ public class SecretSocketPart extends AbsSocketPart implements IBelongControl {
 	}
 
 	@Override
-	public boolean isValid() {
-		if (super.isValid()) {
-			if (this.noToSecretPassway == null || !this.noToSecretPassway.isValid() || this.secretToNoPassway == null
-					|| !this.secretToNoPassway.isValid()) {
-				return false;
-			}
-			return this.isAlive;
-		}
-
-		return false;
-	}
-
-	@Override
 	public void cancel() {
 		if (!this.isAlive) {
 			return;
@@ -59,6 +46,17 @@ public class SecretSocketPart extends AbsSocketPart implements IBelongControl {
 		this.isAlive = false;
 
 		log.debug("socketPart {} will cancel", this.socketPartKey);
+
+		SecretPassway noToSecretPassway;
+		if ((noToSecretPassway = this.noToSecretPassway) != null) {
+			this.noToSecretPassway = null;
+			noToSecretPassway.cancel();
+		}
+		SecretPassway secretToNoPassway;
+		if ((secretToNoPassway = this.secretToNoPassway) != null) {
+			this.secretToNoPassway = null;
+			secretToNoPassway.cancel();
+		}
 
 		Socket recvSocket;
 		if ((recvSocket = this.recvSocket) != null) {
@@ -78,17 +76,6 @@ public class SecretSocketPart extends AbsSocketPart implements IBelongControl {
 			} catch (IOException e) {
 				log.debug("socketPart [{}] 发送端口 关闭异常", socketPartKey);
 			}
-		}
-
-		SecretPassway noToSecretPassway;
-		if ((noToSecretPassway = this.noToSecretPassway) != null) {
-			this.noToSecretPassway = null;
-			noToSecretPassway.cancel();
-		}
-		SecretPassway secretToNoPassway;
-		if ((secretToNoPassway = this.secretToNoPassway) != null) {
-			this.secretToNoPassway = null;
-			secretToNoPassway.cancel();
 		}
 
 		log.debug("socketPart {} is cancelled", this.socketPartKey);
