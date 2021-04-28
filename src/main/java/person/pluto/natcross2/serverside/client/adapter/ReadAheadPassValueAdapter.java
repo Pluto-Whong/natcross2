@@ -32,7 +32,7 @@ public class ReadAheadPassValueAdapter<R, W> implements IClientServiceAdapter {
 	/**
 	 * 客户端服务配置
 	 */
-	private IClientServiceConfig<R, W> config;
+	private final IClientServiceConfig<R, W> config;
 
 	public ReadAheadPassValueAdapter(IClientServiceConfig<R, W> config) {
 		this.config = config;

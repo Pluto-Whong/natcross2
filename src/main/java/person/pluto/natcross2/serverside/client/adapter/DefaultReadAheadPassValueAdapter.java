@@ -17,7 +17,7 @@ public class DefaultReadAheadPassValueAdapter extends ReadAheadPassValueAdapter<
 
 	public DefaultReadAheadPassValueAdapter(IClientServiceConfig<InteractiveModel, InteractiveModel> config) {
 		super(config);
-		this.addLast(new DefaultInteractiveProcessHandler());
+		this.addLast(DefaultInteractiveProcessHandler.INSTANCE);
 	}
 
 }
