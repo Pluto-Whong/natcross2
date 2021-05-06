@@ -86,8 +86,8 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
 		try {
 			java.nio.channels.SocketChannel socketChannel;
 			if (Objects.nonNull(socketChannel = this.socketChannel)) {
-				socketChannel.write(ByteBuffer.wrap(Tools.intToBytes(value.length)));
-				socketChannel.write(ByteBuffer.wrap(value));
+				Tools.channelWrite(socketChannel, ByteBuffer.wrap(Tools.intToBytes(value.length)));
+				Tools.channelWrite(socketChannel, ByteBuffer.wrap(value));
 			} else {
 				OutputStream os = getOutputStream();
 				os.write(Tools.intToBytes(value.length));

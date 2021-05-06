@@ -17,6 +17,7 @@ import person.pluto.natcross2.api.IBelongControl;
 import person.pluto.natcross2.executor.NatcrossExecutor;
 import person.pluto.natcross2.nio.INioProcesser;
 import person.pluto.natcross2.nio.NioHallows;
+import person.pluto.natcross2.utils.Tools;
 
 /**
  * <p>
@@ -88,7 +89,7 @@ public class SimplePassway implements Runnable, INioProcesser {
 		SocketChannel outputChannel;
 		OutputStream outputStream;
 		if (Objects.nonNull((outputChannel = this.getOutputChannel()))) {
-			outputChannel.write(byteBuffer);
+			Tools.channelWrite(outputChannel, byteBuffer);
 		} else {
 			outputStream = this.getOutputStream();
 			outputStream.write(byteBuffer.array(), byteBuffer.position(), byteBuffer.limit());

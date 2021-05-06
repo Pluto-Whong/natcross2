@@ -15,6 +15,7 @@ import person.pluto.natcross2.api.secret.ISecret;
 import person.pluto.natcross2.channel.LengthChannel;
 import person.pluto.natcross2.executor.NatcrossExecutor;
 import person.pluto.natcross2.nio.NioHallows;
+import person.pluto.natcross2.utils.Tools;
 
 /**
  * 
@@ -100,7 +101,7 @@ public class SecretPassway implements Runnable {
 				outputStream.write(decrypt);
 				outputStream.flush();
 			} else {
-				outputChannel.write(ByteBuffer.wrap(decrypt));
+				Tools.channelWrite(outputChannel, ByteBuffer.wrap(decrypt));
 			}
 		}
 	}

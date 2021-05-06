@@ -3,6 +3,8 @@ package person.pluto.natcross2.utils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.WritableByteChannel;
 
 /**
  * 
@@ -68,6 +70,14 @@ public final class Tools {
 			if (inputStream.available() <= 0) {
 				break;
 			}
+		}
+		return sum;
+	}
+
+	public static int channelWrite(WritableByteChannel channel, ByteBuffer buffer) throws IOException {
+		int sum = 0;
+		while (buffer.hasRemaining()) {
+			sum += channel.write(buffer);
 		}
 		return sum;
 	}
