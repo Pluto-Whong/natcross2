@@ -33,9 +33,8 @@ public class ProcesserHolder {
 	 */
 	public void proccess(SelectionKey key) {
 		this.processer.proccess(key);
-		if (key.isValid()) {
-			key.interestOps(this.interestOps);
-		} else {
+
+		if (!NioHallows.reRegisterByKey(key, this.interestOps)) {
 			NioHallows.release(this.channel);
 		}
 	}

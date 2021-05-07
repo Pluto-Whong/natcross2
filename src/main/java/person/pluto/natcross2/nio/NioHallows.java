@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.executor.NatcrossExecutor;
+import person.pluto.natcross2.utils.Assert;
 import person.pluto.natcross2.utils.CountWaitLatch;
 
 /**
@@ -57,6 +58,20 @@ public final class NioHallows implements Runnable {
 	}
 
 	/**
+	 * 根据 {@link SelectionKey} 恢复监听事件的注册
+	 *
+	 * @param key 原始的key
+	 * @param ops 要与通过 {@link #register(SelectableChannel, int, INioProcesser)}
+	 *            注册的事件统一
+	 * @throws IOException
+	 * @author Pluto
+	 * @since 2021-05-07 13:21:49
+	 */
+	public static boolean reRegisterByKey(SelectionKey key, int ops) {
+		return INSTANCE.reRegisterByKey0(key, ops);
+	}
+
+	/**
 	 * 释放注册
 	 *
 	 * @param channel
@@ -76,11 +91,11 @@ public final class NioHallows implements Runnable {
 
 	private final CountWaitLatch countWaitLatch = new CountWaitLatch();
 
-	private final Map<SelectableChannel, ProcesserHolder> chanelProcesserMap = new ConcurrentHashMap<>();
+	private final Map<SelectableChannel, ProcesserHolder> channelProcesserMap = new ConcurrentHashMap<>();
 
 	@Setter
 	@Getter
-	private long selectTimeout = 100L;
+	private long selectTimeout = 10L;
 	@Setter
 	@Getter
 	private long wakeupSleepNanos = 1000000L;
@@ -146,18 +161,50 @@ public final class NioHallows implements Runnable {
 	public void register0(SelectableChannel channel, int ops, INioProcesser proccesser) throws IOException {
 		Objects.requireNonNull(channel, "channel non null");
 		try {
-			this.chanelProcesserMap.put(channel, ProcesserHolder.of(channel, ops, proccesser));
+			this.channelProcesserMap.put(channel, ProcesserHolder.of(channel, ops, proccesser));
 			channel.configureBlocking(false);
 
 			this.countWaitLatch.countUp();
 			// 这里有个坑点，如果在select中，这里会被阻塞
 			channel.register(this.getWakeupSelector(), ops);
 		} catch (Throwable e) {
-			this.chanelProcesserMap.remove(channel);
+			this.channelProcesserMap.remove(channel);
 			throw e;
 		} finally {
 			this.countWaitLatch.countDown();
 		}
+	}
+
+	/**
+	 * 根据 {@link SelectionKey} 恢复监听事件的注册
+	 *
+	 * @param key 原始的key
+	 * @param ops 要与通过 {@link #register0(SelectableChannel, int, INioProcesser)}
+	 *            注册的事件统一
+	 * @throws IOException
+	 * @author Pluto
+	 * @since 2021-05-07 13:21:49
+	 */
+	public boolean reRegisterByKey0(SelectionKey key, int ops) {
+		Objects.requireNonNull(key, "key non null");
+
+		Assert.state(key.selector() == this.selector, "this SelectionKey is not belong NioHallows's selector");
+
+		if (!key.isValid()) {
+			return false;
+		}
+
+		// 通过事件和源码分析，恢复注册是通过updateKeys.addLast进行，虽然没有被阻塞，但是需要进行一次唤醒才可以成功恢复事件监听
+		// 因无法获知是否成功注入selector，所以必须要进行一次唤醒操作，并且没有阻塞的问题，所以这里不通过countWaitLatch进行同步
+		key.interestOps(ops);
+
+		try {
+			this.getWakeupSelector();
+		} catch (IOException e) {
+			// 出错了交给其他的流程逻辑，这里只进行一次唤醒
+		}
+
+		return true;
 	}
 
 	/**
@@ -171,7 +218,7 @@ public final class NioHallows implements Runnable {
 		if (Objects.isNull(channel)) {
 			return;
 		}
-		this.chanelProcesserMap.remove(channel);
+		this.channelProcesserMap.remove(channel);
 
 		SelectionKey key = channel.keyFor(this.selector);
 
@@ -183,19 +230,20 @@ public final class NioHallows implements Runnable {
 	@Override
 	public void run() {
 		CountWaitLatch countWaitLatch = this.countWaitLatch;
-		Map<SelectableChannel, ProcesserHolder> chanelProcesserMap = this.chanelProcesserMap;
+		Map<SelectableChannel, ProcesserHolder> chanelProcesserMap = this.channelProcesserMap;
 
 		for (; this.alive;) {
 			try {
+				// 给注册事务一个时间，如果等待时间太长（可能需要注入的太多），就跳出再去获取新事件，防止饿死
+				try {
+					countWaitLatch.await(this.getWakeupSleepNanos(), TimeUnit.NANOSECONDS);
+				} catch (InterruptedException e) {
+					log.warn("selector wait register timeout");
+				}
+
 				// 采用有期限的监听，以免线程太快，没有来的及注册，就永远阻塞在那里了
 				int select = getSelector().select(this.getSelectTimeout());
 				if (select <= 0) {
-					// 给注册事务一个时间，如果等待时间太长（可能需要注入的太多），就跳出再去获取新事件，防止饿死
-					try {
-						countWaitLatch.await(this.wakeupSleepNanos, TimeUnit.NANOSECONDS);
-					} catch (InterruptedException e) {
-						log.warn("selector wait register timeout");
-					}
 					continue;
 				}
 
