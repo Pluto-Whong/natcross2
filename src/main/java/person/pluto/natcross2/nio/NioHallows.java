@@ -85,6 +85,7 @@ public final class NioHallows implements Runnable {
 	private volatile Thread myThread = null;
 
 	private volatile boolean alive = false;
+	private volatile boolean canceled = false;
 
 	private volatile Selector selector;
 	private final Object selectorLock = new Object();
@@ -111,17 +112,25 @@ public final class NioHallows implements Runnable {
 	 * @since 2021-04-26 16:04:30
 	 */
 	public Selector getSelector() throws IOException {
-		if (Objects.isNull(this.selector)) {
+		// 判空、返回逻辑，按第一次取值进行，缺点是不能判断是否已经关闭，但与 this.cancel()
+		// 方法中的执行顺序来看，会先被设置为null，再去close，所以可以大概率认为若不为null即为没有关闭
+		Selector selector = this.selector;
+		if (Objects.isNull(selector)) {
 			synchronized (this.selectorLock) {
 				// 二次校验
-				if (Objects.isNull(this.selector)) {
+				// 若是主动退出，则不在创建，避免退出时有新任务而被重启，若要重新启用，则需要主动调用 start() 方法来启动
+				if (Objects.isNull(this.selector) && !this.canceled) {
 					this.selector = Selector.open();
 					this.start();
 				}
 			}
+			selector = this.selector;
+			if (Objects.isNull(selector)) {
+				throw new IOException("NioHallows's selector is closed");
+			}
 		}
 
-		return this.selector;
+		return selector;
 	}
 
 	/**
@@ -233,39 +242,42 @@ public final class NioHallows implements Runnable {
 		Map<SelectableChannel, ProcesserHolder> chanelProcesserMap = this.channelProcesserMap;
 
 		for (; this.alive;) {
+			// 给注册事务一个时间，如果等待时间太长（可能需要注入的太多），就跳出再去获取新事件，防止饿死
 			try {
-				// 给注册事务一个时间，如果等待时间太长（可能需要注入的太多），就跳出再去获取新事件，防止饿死
-				try {
-					countWaitLatch.await(this.getWakeupSleepNanos(), TimeUnit.NANOSECONDS);
-				} catch (InterruptedException e) {
-					log.warn("selector wait register timeout");
-				}
+				countWaitLatch.await(this.getWakeupSleepNanos(), TimeUnit.NANOSECONDS);
+			} catch (InterruptedException e) {
+				log.warn("selector wait register timeout");
+			}
+
+			Selector selector;
+			try {
+				selector = getSelector();
 
 				// 采用有期限的监听，以免线程太快，没有来的及注册，就永远阻塞在那里了
-				int select = getSelector().select(this.getSelectTimeout());
+				int select = selector.select(this.getSelectTimeout());
 				if (select <= 0) {
 					continue;
 				}
-
-				Iterator<SelectionKey> iterator = getSelector().selectedKeys().iterator();
-				for (; iterator.hasNext();) {
-					SelectionKey key = iterator.next();
-					iterator.remove();
-					key.interestOps(0);
-
-					ProcesserHolder processerHolder = chanelProcesserMap.get(key.channel());
-					if (Objects.isNull(processerHolder)) {
-						key.cancel();
-						continue;
-					}
-
-					NatcrossExecutor.executeNioAction(() -> {
-						processerHolder.proccess(key);
-					});
-				}
-
 			} catch (IOException e) {
 				log.error("NioHallows run exception", e);
+				continue;
+			}
+
+			Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
+			for (; iterator.hasNext();) {
+				SelectionKey key = iterator.next();
+				iterator.remove();
+				key.interestOps(0);
+
+				ProcesserHolder processerHolder = chanelProcesserMap.get(key.channel());
+				if (Objects.isNull(processerHolder)) {
+					key.cancel();
+					continue;
+				}
+
+				NatcrossExecutor.executeNioAction(() -> {
+					processerHolder.proccess(key);
+				});
 			}
 		}
 	}
@@ -276,8 +288,11 @@ public final class NioHallows implements Runnable {
 	 * @author Pluto
 	 * @since 2021-04-26 16:33:07
 	 */
-	public void start() {
+	public synchronized void start() {
+
+		this.canceled = false;
 		this.alive = true;
+
 		if (this.myThread == null || !this.myThread.isAlive()) {
 			this.myThread = new Thread(this);
 			this.myThread.setName("nio-hallows");
@@ -294,7 +309,20 @@ public final class NioHallows implements Runnable {
 	 * @since 2021-04-26 16:33:33
 	 */
 	public void cancel() {
-		log.info("NioHallows cancell");
+		// 假设A线程执行到了 this.selector = Selector.open() 但是调用 this.cancel()
+		// 方法的B线程抢占cpu成功，并一直到执行完成，此时A线程抢占CPU继续执行，又会进行重启，与关停项目时的关停期望不同。
+		//
+		// 此处锁定 this.selectorLock 后再去设置 this.canceled，形成与 this.getSelector()
+		// 的线程同步，同时避免了被动调用 this.start() 时与 this.cancel() 的同步问题，最终可关闭。
+		// 虽与主动调用 this.start() 有不同步的风险，但 this.start() 、 this.cancel()
+		// 主动调用的场景有极大对立性，所以不进行过多的关照。
+		//
+		// 注意：若 this.cancel() 添加了synchronized，存在死锁的可能！！！
+		synchronized (this.selectorLock) {
+			this.canceled = true;
+		}
+
+		log.info("NioHallows cancel");
 
 		this.alive = false;
 
@@ -304,6 +332,7 @@ public final class NioHallows implements Runnable {
 			try {
 				selector.close();
 			} catch (IOException e) {
+				// do nothing
 			}
 		}
 
