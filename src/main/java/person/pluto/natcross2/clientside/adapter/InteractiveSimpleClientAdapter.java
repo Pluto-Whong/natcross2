@@ -259,7 +259,7 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
 	}
 
 	@Override
-	public void sendUrgentData() throws Exception {
+	public void sendHeartTest() throws Exception {
 		InteractiveModel interactiveModel = InteractiveModel.of(InteractiveTypeEnum.HEART_TEST, null);
 		this.socketChannel.writeAndFlush(interactiveModel);
 	}

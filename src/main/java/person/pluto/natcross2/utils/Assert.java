@@ -26,7 +26,7 @@ public class Assert {
 	}
 
 	/**
-	 * 是否为空
+	 * 是否为true
 	 *
 	 * @param expression
 	 * @param message

@@ -61,7 +61,7 @@ public interface IClientAdapter<R, W> {
 	 * @since 2020-01-08 16:23:49
 	 * @throws Exception
 	 */
-	void sendUrgentData() throws Exception;
+	void sendHeartTest() throws Exception;
 
 	/**
 	 * 获取socket读写通道

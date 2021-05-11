@@ -20,12 +20,12 @@ public class AESSecret implements ISecret {
 
 	@Override
 	public byte[] encrypt(byte[] content, int offset, int len) throws Exception {
-		return AESUtil.encrypt(aesKey, content, offset, len);
+		return AESUtil.encrypt(this.aesKey, content, offset, len);
 	}
 
 	@Override
 	public byte[] decrypt(byte[] result) throws Exception {
-		return AESUtil.decrypt(aesKey, result);
+		return AESUtil.decrypt(this.aesKey, result);
 	}
 
 	/**

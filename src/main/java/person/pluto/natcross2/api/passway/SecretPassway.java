@@ -60,7 +60,7 @@ public class SecretPassway implements Runnable {
 	@Override
 	public void run() {
 		try {
-			if (Mode.noToSecret.equals(mode)) {
+			if (Mode.noToSecret.equals(this.mode)) {
 				noToSecret();
 			} else {
 				secretToNo();
@@ -86,6 +86,8 @@ public class SecretPassway implements Runnable {
 
 		OutputStream outputStream = this.sendSocket.getOutputStream();
 		SocketChannel outputChannel = this.sendSocket.getChannel();
+
+		ISecret secret = this.secret;
 
 		byte[] read;
 		byte[] decrypt;
@@ -124,7 +126,7 @@ public class SecretPassway implements Runnable {
 		ISecret secret = this.secret;
 
 		int len = -1;
-		byte[] arrayTemp = new byte[streamCacheSize];
+		byte[] arrayTemp = new byte[this.streamCacheSize];
 		byte[] encrypt;
 		while (alive && (len = inputStream.read(arrayTemp)) > 0) {
 			encrypt = secret.encrypt(arrayTemp, 0, len);
@@ -155,7 +157,7 @@ public class SecretPassway implements Runnable {
 		}
 		this.alive = false;
 
-		NioHallows.release(recvSocket.getChannel());
+		NioHallows.release(this.recvSocket.getChannel());
 
 		try {
 			Socket recvSocket;
@@ -174,8 +176,8 @@ public class SecretPassway implements Runnable {
 		}
 
 		IBelongControl belong;
-		if ((belong = belongControl) != null) {
-			belongControl = null;
+		if ((belong = this.belongControl) != null) {
+			this.belongControl = null;
 			belong.noticeStop();
 		}
 	}

@@ -95,7 +95,7 @@ public class SecretSocketPart extends AbsSocketPart implements IBelongControl {
 			noToSecretPassway.setRecvSocket(this.recvSocket);
 			noToSecretPassway.setSendSocket(this.sendSocket);
 			noToSecretPassway.setStreamCacheSize(getStreamCacheSize());
-			noToSecretPassway.setSecret(secret);
+			noToSecretPassway.setSecret(this.secret);
 
 			SecretPassway secretToNoPassway = this.secretToNoPassway = new SecretPassway();
 			secretToNoPassway.setBelongControl(this);

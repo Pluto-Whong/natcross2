@@ -2,7 +2,6 @@ package person.pluto.natcross2.api.socketpart;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -50,7 +49,7 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 	protected void routeHost() throws Exception {
 		HttpRoute willConnect = null;
 
-		InputStream inputStream = new BufferedInputStream(sendSocket.getInputStream());
+		BufferedInputStream inputStream = new BufferedInputStream(this.sendSocket.getInputStream());
 
 		// 缓存数据，不能我们处理了就不给实际应用
 		ByteArrayOutputStream headerBufferStream = new ByteArrayOutputStream(1024);
@@ -157,7 +156,7 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 		}
 		this.isAlive = true;
 		try {
-			routeHost();
+			this.routeHost();
 
 			SimplePassway outToInPassway = this.outToInPassway = new SimplePassway();
 			outToInPassway.setBelongControl(this);

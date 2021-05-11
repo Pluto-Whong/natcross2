@@ -1,5 +1,7 @@
 package person.pluto.natcross2.serverside.client.adapter;
 
+import lombok.Getter;
+
 /**
  * 
  * <p>
@@ -9,6 +11,7 @@ package person.pluto.natcross2.serverside.client.adapter;
  * @author Pluto
  * @since 2020-01-08 16:40:54
  */
+@Getter
 public enum PassValueNextEnum {
 
     // 停止并关闭
@@ -28,14 +31,6 @@ public enum PassValueNextEnum {
     private PassValueNextEnum(boolean nextFlag, boolean closeFlag) {
         this.nextFlag = nextFlag;
         this.closeFlag = closeFlag;
-    }
-
-    public boolean isNextFlag() {
-        return nextFlag;
-    }
-
-    public boolean isCloseFlag() {
-        return closeFlag;
     }
 
 }

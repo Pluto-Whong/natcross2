@@ -55,7 +55,7 @@ public class SimplePassway implements Runnable, INioProcesser {
 	private OutputStream getOutputStream() throws IOException {
 		OutputStream outputStream = this.outputStream;
 		if (Objects.isNull(outputStream)) {
-			outputStream = sendSocket.getOutputStream();
+			outputStream = this.sendSocket.getOutputStream();
 			this.outputStream = outputStream;
 		}
 		return outputStream;
@@ -64,7 +64,7 @@ public class SimplePassway implements Runnable, INioProcesser {
 	private SocketChannel getOutputChannel() {
 		SocketChannel outputChannel = this.outputChannel;
 		if (Objects.isNull(outputChannel)) {
-			outputChannel = sendSocket.getChannel();
+			outputChannel = this.sendSocket.getChannel();
 			this.outputChannel = outputChannel;
 		}
 		return outputChannel;
@@ -100,12 +100,12 @@ public class SimplePassway implements Runnable, INioProcesser {
 	@Override
 	public void run() {
 		try {
-			InputStream inputStream = recvSocket.getInputStream();
+			InputStream inputStream = this.recvSocket.getInputStream();
 
 			int len = -1;
-			byte[] arrayTemp = new byte[streamCacheSize];
+			byte[] arrayTemp = new byte[this.streamCacheSize];
 
-			while (alive && (len = inputStream.read(arrayTemp)) > 0) {
+			while (this.alive && (len = inputStream.read(arrayTemp)) > 0) {
 				this.write(ByteBuffer.wrap(arrayTemp, 0, len));
 			}
 		} catch (IOException e) {
@@ -128,10 +128,10 @@ public class SimplePassway implements Runnable, INioProcesser {
 		ByteBuffer byteBuffer = this.byteBuffer;
 		if (Objects.isNull(byteBuffer)) {
 			if (Objects.isNull(this.getOutputChannel())) {
-				byteBuffer = ByteBuffer.allocate(streamCacheSize);
+				byteBuffer = ByteBuffer.allocate(this.streamCacheSize);
 			} else {
 				// 输入输出可以使用channel，此处则使用DirectByteBuffer，这时候才真正体现出了DMA
-				byteBuffer = ByteBuffer.allocateDirect(streamCacheSize);
+				byteBuffer = ByteBuffer.allocateDirect(this.streamCacheSize);
 			}
 			this.byteBuffer = byteBuffer;
 		}
@@ -140,7 +140,7 @@ public class SimplePassway implements Runnable, INioProcesser {
 
 	@Override
 	public void proccess(SelectionKey key) {
-		if (alive && key.isValid()) {
+		if (this.alive && key.isValid()) {
 			ByteBuffer buffer = this.obtainByteBuffer();
 
 			SocketChannel inputChannel = (SocketChannel) key.channel();
@@ -197,7 +197,7 @@ public class SimplePassway implements Runnable, INioProcesser {
 		}
 		this.alive = false;
 
-		NioHallows.release(recvSocket.getChannel());
+		NioHallows.release(this.recvSocket.getChannel());
 
 		try {
 			Socket recvSocket;
@@ -216,8 +216,8 @@ public class SimplePassway implements Runnable, INioProcesser {
 		}
 
 		IBelongControl belong;
-		if ((belong = belongControl) != null) {
-			belongControl = null;
+		if ((belong = this.belongControl) != null) {
+			this.belongControl = null;
 			belong.noticeStop();
 		}
 	}
@@ -234,7 +234,7 @@ public class SimplePassway implements Runnable, INioProcesser {
 		}
 		this.alive = true;
 
-		SocketChannel recvChannel = recvSocket.getChannel();
+		SocketChannel recvChannel = this.recvSocket.getChannel();
 		if (Objects.isNull(recvChannel)) {
 			NatcrossExecutor.executePassway(this);
 		} else {

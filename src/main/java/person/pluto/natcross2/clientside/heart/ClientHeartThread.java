@@ -46,7 +46,7 @@ public class ClientHeartThread implements IClientHeartThread, Runnable {
 
 		log.debug("send client heart data to {}", clientControlThread.getListenServerPort());
 		try {
-			clientControlThread.sendUrgentData();
+			clientControlThread.sendHeartTest();
 			this.failCount = 0;
 
 			return;

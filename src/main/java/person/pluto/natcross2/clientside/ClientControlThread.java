@@ -205,9 +205,9 @@ public final class ClientControlThread implements Runnable, IBelongControl {
 	 * @since 2020-01-07 15:54:47
 	 * @throws Exception
 	 */
-	public void sendUrgentData() throws Exception {
+	public void sendHeartTest() throws Exception {
 		// 无需判空，空指针异常也是异常
-		this.clientAdapter.sendUrgentData();
+		this.clientAdapter.sendHeartTest();
 	}
 
 	/**

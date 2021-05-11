@@ -205,15 +205,7 @@ public class HttpRouteClientConfig extends InteractiveClientConfig implements IH
 
 	@Override
 	public AbsSocketPart newSocketPart(ClientControlThread clientControlThread) {
-		HttpRouteSocketPart httpRouteSocketPart;
-
-		ReentrantReadWriteLock routeLock = this.routeLock;
-		routeLock.readLock().lock();
-		try {
-			httpRouteSocketPart = new HttpRouteSocketPart(clientControlThread, this);
-		} finally {
-			routeLock.readLock().unlock();
-		}
+		HttpRouteSocketPart httpRouteSocketPart = new HttpRouteSocketPart(clientControlThread, this);
 
 		httpRouteSocketPart.setStreamCacheSize(this.getStreamCacheSize());
 
@@ -233,7 +225,13 @@ public class HttpRouteClientConfig extends InteractiveClientConfig implements IH
 
 	@Override
 	public HttpRoute pickMasterRoute() {
-		return this.masterRoute;
+		ReentrantReadWriteLock routeLock = this.routeLock;
+		routeLock.readLock().lock();
+		try {
+			return this.masterRoute;
+		} finally {
+			routeLock.readLock().unlock();
+		}
 	}
 
 	@Override
