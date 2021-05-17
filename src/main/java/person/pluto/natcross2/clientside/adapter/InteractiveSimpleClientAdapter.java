@@ -156,9 +156,8 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
 			}
 
 		} catch (Exception e) {
-			log.error("打通隧道发生异常 {}:{}<->{}:{} ;[]", this.config.getClientServiceIp(),
-					this.config.getClientServicePort(), this.config.getDestIp(), this.config.getDestPort(),
-					e.getCause());
+			log.error("打通隧道发生异常 " + this.config.getClientServiceIp() + ":" + this.config.getClientServicePort() + "<->"
+					+ this.config.getDestIp() + ":" + this.config.getDestPort(), e);
 			try {
 				destSocket.close();
 			} catch (IOException e1) {

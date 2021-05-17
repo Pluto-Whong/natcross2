@@ -28,6 +28,8 @@ public class SimpleSocketPart extends AbsSocketPart implements IBelongControl {
 	@Setter
 	private int streamCacheSize = 8192;
 
+	private volatile boolean canceled = false;
+
 	public SimpleSocketPart(IBelongControl belongThread) {
 		super(belongThread);
 	}
@@ -50,9 +52,10 @@ public class SimpleSocketPart extends AbsSocketPart implements IBelongControl {
 
 	@Override
 	public void cancel() {
-		if (!this.isAlive) {
+		if (this.canceled) {
 			return;
 		}
+		this.canceled = true;
 		this.isAlive = false;
 
 		log.debug("socketPart {} will cancel", this.socketPartKey);
