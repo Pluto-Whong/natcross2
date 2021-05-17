@@ -267,7 +267,12 @@ public final class NioHallows implements Runnable {
 			for (; iterator.hasNext();) {
 				SelectionKey key = iterator.next();
 				iterator.remove();
-				key.interestOps(0);
+
+				try {
+					key.interestOps(0);
+				} catch (Exception e) {
+					// do no thing
+				}
 
 				ProcesserHolder processerHolder = chanelProcesserMap.get(key.channel());
 				if (Objects.isNull(processerHolder)) {
