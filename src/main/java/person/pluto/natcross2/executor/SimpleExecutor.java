@@ -23,6 +23,7 @@ public class SimpleExecutor implements IExecutor {
 	@Override
 	public void shutdown() {
 		this.executor.shutdownNow();
+		this.scheduledExecutor.shutdownNow();
 	}
 
 	@Override
