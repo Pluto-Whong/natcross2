@@ -30,7 +30,7 @@ public final class ClientServiceThread implements Runnable, INioProcesser {
 
 	private volatile boolean isAlive = false;
 	private volatile boolean canceled = false;
-	private ServerSocket listenServerSocket;
+	private final ServerSocket listenServerSocket;
 
 	private final IClientServiceConfig<?, ?> config;
 
@@ -65,7 +65,9 @@ public final class ClientServiceThread implements Runnable, INioProcesser {
 		try {
 			ServerSocketChannel channel = (ServerSocketChannel) key.channel();
 			SocketChannel accept = channel.accept();
-			this.procMethod(accept.socket());
+			for (; Objects.nonNull(accept); accept = channel.accept()) {
+				this.procMethod(accept.socket());
+			}
 		} catch (IOException e) {
 			log.warn("客户端服务进程 轮询等待出现异常", e);
 			this.cancel();
@@ -88,7 +90,7 @@ public final class ClientServiceThread implements Runnable, INioProcesser {
 				try {
 					listenSocket.close();
 				} catch (IOException sce) {
-					log.warn("处理新socket时报错，并关闭socket异常", e);
+					log.warn("处理新socket时异常，并在关闭socket时异常", e);
 				}
 			}
 		});
@@ -100,7 +102,7 @@ public final class ClientServiceThread implements Runnable, INioProcesser {
 	 * @author Pluto
 	 * @since 2020-01-03 14:05:59
 	 */
-	public void start() {
+	public synchronized void start() {
 		Assert.state(this.canceled == false, "已退出，不得重新启动");
 
 		log.info("client service [{}] starting ...", this.config.getListenPort());
@@ -108,14 +110,12 @@ public final class ClientServiceThread implements Runnable, INioProcesser {
 
 		ServerSocketChannel channel = this.listenServerSocket.getChannel();
 		if (Objects.nonNull(channel)) {
-			if (!channel.isRegistered() || (channel.validOps() & SelectionKey.OP_ACCEPT) == 0) {
-				try {
-					NioHallows.register(channel, SelectionKey.OP_ACCEPT, this);
-				} catch (IOException e) {
-					log.error("register clientService channel[{}] faild!", config.getListenPort());
-					this.cancel();
-					throw new RuntimeException("nio注册时异常", e);
-				}
+			try {
+				NioHallows.register(channel, SelectionKey.OP_ACCEPT, this);
+			} catch (IOException e) {
+				log.error("register clientService channel[{}] faild!", config.getListenPort());
+				this.cancel();
+				throw new RuntimeException("nio注册时异常", e);
 			}
 		} else {
 			if (this.myThread == null || !this.myThread.isAlive()) {
@@ -134,7 +134,7 @@ public final class ClientServiceThread implements Runnable, INioProcesser {
 	 * @author Pluto
 	 * @since 2019-07-18 18:32:03
 	 */
-	public void cancel() {
+	public synchronized void cancel() {
 		if (this.canceled) {
 			return;
 		}
@@ -146,10 +146,7 @@ public final class ClientServiceThread implements Runnable, INioProcesser {
 
 		ServerSocket listenServerSocket;
 		if ((listenServerSocket = this.listenServerSocket) != null) {
-			this.listenServerSocket = null;
-
 			NioHallows.release(listenServerSocket.getChannel());
-
 			try {
 				listenServerSocket.close();
 			} catch (IOException e) {

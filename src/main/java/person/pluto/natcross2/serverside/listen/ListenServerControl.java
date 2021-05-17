@@ -2,7 +2,6 @@ package person.pluto.natcross2.serverside.listen;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +18,7 @@ import person.pluto.natcross2.serverside.listen.config.IListenServerConfig;
 @Slf4j
 public class ListenServerControl {
 
-	private static final Map<Integer, ServerListenThread> serverListenMap = new ConcurrentHashMap<>();
+	private static final ConcurrentHashMap<Integer, ServerListenThread> serverListenMap = new ConcurrentHashMap<>();
 
 	/**
 	 ** 加入新的监听服务进程
@@ -54,13 +53,12 @@ public class ListenServerControl {
 	 * @return
 	 */
 	public static boolean remove(Integer listenPort) {
-		ServerListenThread serverListenThread = serverListenMap.get(listenPort);
+		ServerListenThread serverListenThread = serverListenMap.remove(listenPort);
 		if (serverListenThread == null) {
 			return true;
 		}
 
 		serverListenThread.cancel();
-		serverListenMap.remove(listenPort);
 
 		return true;
 	}
@@ -101,7 +99,7 @@ public class ListenServerControl {
 	public static void closeAll() {
 		Integer[] array = serverListenMap.keySet().toArray(new Integer[0]);
 		for (Integer key : array) {
-			remove(key);
+			ListenServerControl.remove(key);
 		}
 	}
 

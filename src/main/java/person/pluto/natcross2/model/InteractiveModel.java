@@ -30,7 +30,7 @@ public class InteractiveModel implements JSONAware {
 		JSONObject jsonObject = new JSONObject();
 		jsonObject.put(key, value);
 
-		return new InteractiveModel(CommonFormat.getInteractiveSeq(), interactiveTypeEnum.name(), jsonObject);
+		return new InteractiveModel(CommonFormat.generateInteractiveSeq(), interactiveTypeEnum.name(), jsonObject);
 	}
 
 	public static InteractiveModel of(String interactiveSeq, InteractiveTypeEnum interactiveTypeEnum, Object data) {
@@ -39,12 +39,12 @@ public class InteractiveModel implements JSONAware {
 	}
 
 	public static InteractiveModel of(InteractiveTypeEnum interactiveTypeEnum, Object data) {
-		return new InteractiveModel(CommonFormat.getInteractiveSeq(), interactiveTypeEnum.name(),
+		return new InteractiveModel(CommonFormat.generateInteractiveSeq(), interactiveTypeEnum.name(),
 				data == null ? null : JSON.parseObject(JSON.toJSONString(data)));
 	}
 
 	public static InteractiveModel of(String interactiveType, Object data) {
-		return new InteractiveModel(CommonFormat.getInteractiveSeq(), interactiveType,
+		return new InteractiveModel(CommonFormat.generateInteractiveSeq(), interactiveType,
 				JSON.parseObject(JSON.toJSONString(data)));
 	}
 

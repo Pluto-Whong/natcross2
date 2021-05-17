@@ -24,7 +24,7 @@ public class CommonFormat {
 	 * @param listenPort
 	 * @return
 	 */
-	public static String getSocketPartKey(Integer listenPort) {
+	public static String generateSocketPartKey(Integer listenPort) {
 		DecimalFormat fiveLenFormat = new DecimalFormat("00000");
 		String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
 		String randomNum = RandomStringUtils.randomNumeric(4);
@@ -51,7 +51,7 @@ public class CommonFormat {
 	 * @since 2019-07-17 09:35:29
 	 * @return
 	 */
-	public static String getInteractiveSeq() {
+	public static String generateInteractiveSeq() {
 		String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
 		String randomNum = RandomStringUtils.randomNumeric(4);
 		return String.join("-", "IS", dateTime, randomNum);
