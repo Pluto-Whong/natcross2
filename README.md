@@ -79,23 +79,3 @@ ClientApp:
 |消息加密|对AES、MD5联合的使用示例，channel.SecretInteractiveChannel、model.SecretInteractiveModel，对实际消息进行加密，增加辅助字段保证消息的真实性、准确性和完整性|
 |计数门闩|utils.CountWaitLatch，类CountDownLatch，增加了countUp，不只受初始化的值决定，可以增加、减少，主要用来解决nio.NioHallows唤醒后批量channel注册的问题（等下，怎么感觉可以用读写锁来解决呢？）|
 |线程池|虽然用了线程池，但默认的是Executors.newCachedThreadPool()来生成的，具体的还是需要根据机器来自定义线程池，主要还是对子线程的管控体现吧|
-
-## 设计模式的使用
-
-|设计模式|体现点|
-|:-:|:-|
-|单例模式|nio.NioHallows等|
-|建造者模式|adapter的构建过程，三大核心Thread的config设置过程|
-|适配器模式|IClientAdapter、IClientServiceAdapter、SimplePassway#write|
-|桥接模式|三大核心Thread的config|
-|组合模式|InteractiveSimpleClientAdapter#addMessageHandler、InteractiveProcessHandler|
-|装饰器模式|InteractiveSimpleClientAdapter#addMessageHandler、InteractiveProcessHandler、ReadAheadPassValueAdapter#handlerList、HttpRouteClientConfig|
-|外观模式|NatcrossExecutor|
-|享元模式|SimplePassway#obtainByteBuffer|
-|代理模式|channel下各个类|
-|责任链模式|InteractiveProcessHandler、InteractiveSimpleClientAdapter#procMethod|
-|中介者模式|api.IBelongControl|
-|策略模式|三大核心Thread的config，适配不同的模式|
-|模板模式|ISecret、AbsSocketPart、IHttpRouting、Channel、IExecutor等等一系列的接口定义|
-|数据访问模式|InteractiveChannel|
-|传输对象模式|日常|
