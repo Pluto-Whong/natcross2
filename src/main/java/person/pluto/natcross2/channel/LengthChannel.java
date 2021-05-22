@@ -55,7 +55,7 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
 				len = is.read(lenBytes, offset, lenBytes.length - offset);
 				if (len < 0) {
 					// 如果-1，提前关闭了，又没有获得足够的数据，那么就抛出异常
-					throw new IOException("Insufficient byte length when io closed");
+					throw new IOException("Insufficient byte length[" + lenBytes.length + "] when io closed");
 				}
 				offset += len;
 			}
@@ -68,7 +68,7 @@ public class LengthChannel extends SocketChannel<byte[], byte[]> {
 				len = is.read(b, offset, length - offset);
 				if (len < 0) {
 					// 如果-1，提前关闭了，又没有获得足够的数据，那么就抛出异常
-					throw new IOException("Insufficient byte length when io closed");
+					throw new IOException("Insufficient byte length[" + length + "] when io closed");
 				}
 				offset += len;
 			}
