@@ -1,6 +1,7 @@
 package person.pluto.natcross2.serverside.listen.control;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -42,9 +43,11 @@ public class ControlSocket implements IControlSocket, Runnable {
 	@Override
 	public boolean isValid() {
 		SocketChannel<? extends InteractiveModel, ? super InteractiveModel> socketChannel = this.socketChannel;
-		if (socketChannel == null || socketChannel.getSocket() == null
-		//
-				|| !socketChannel.getSocket().isConnected() || socketChannel.getSocket().isClosed()) {
+
+		Socket socket = (socketChannel == null) ? null : socketChannel.getSocket();
+		boolean closeFlag = (socket == null) ? true
+				: !socket.isConnected() || socket.isClosed() || socket.isInputShutdown() || socket.isOutputShutdown();
+		if (closeFlag) {
 			return false;
 		}
 
