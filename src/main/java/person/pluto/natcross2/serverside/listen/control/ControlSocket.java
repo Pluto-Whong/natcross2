@@ -134,7 +134,7 @@ public class ControlSocket implements IControlSocket, Runnable {
 
 			} catch (Exception e) {
 				log.error("读取或写入异常", e);
-				if (!this.isValid()) {
+				if (e instanceof IOException || !this.isValid()) {
 					this.close();
 				}
 			}
