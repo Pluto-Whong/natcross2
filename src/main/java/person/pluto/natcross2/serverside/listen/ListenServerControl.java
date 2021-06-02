@@ -116,7 +116,7 @@ public class ListenServerControl {
 		try {
 			serverListenThread = new ServerListenThread(config);
 		} catch (Exception e) {
-			log.warn("create listen server [{}] faild", config.getListenPort());
+			log.warn("create listen server [" + config.getListenPort() + "] faild", e);
 			return null;
 		}
 		// 若没有报错则说明没有监听该端口的线程，即不可正常使用原有端口，所以先进行强行remove，再进行add
