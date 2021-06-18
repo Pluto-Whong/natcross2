@@ -28,7 +28,8 @@ import person.pluto.natcross2.serverside.listen.recv.IRecvHandler;
 public class ControlSocket implements IControlSocket, Runnable {
 
 	private volatile Thread myThread = null;
-	private volatile boolean isAlive = false;
+	private volatile boolean started = false;
+	private volatile boolean cancelled = false;
 
 	protected final SocketChannel<? extends InteractiveModel, ? super InteractiveModel> socketChannel;
 
@@ -64,7 +65,7 @@ public class ControlSocket implements IControlSocket, Runnable {
 
 	@Override
 	public void close() {
-		this.isAlive = false;
+		this.cancelled = true;
 
 		Thread myThread;
 		if ((myThread = this.myThread) != null) {
@@ -89,7 +90,7 @@ public class ControlSocket implements IControlSocket, Runnable {
 
 		try {
 			this.socketChannel.writeAndFlush(model);
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			return false;
 		}
 
@@ -98,18 +99,23 @@ public class ControlSocket implements IControlSocket, Runnable {
 
 	@Override
 	public void startRecv() {
-		this.isAlive = true;
-		if (this.myThread == null || !this.myThread.isAlive()) {
-			this.myThread = new Thread(this);
-			this.myThread.setName("control-recv-" + this.formatServerListenInfo());
-			this.myThread.start();
+		if (this.started) {
+			return;
+		}
+		this.started = true;
+
+		Thread myThread = this.myThread;
+		if (myThread == null || !myThread.isAlive()) {
+			myThread = this.myThread = new Thread(this);
+			myThread.setName("control-recv-" + this.formatServerListenInfo());
+			myThread.start();
 		}
 	}
 
 	@Override
 	public void run() {
 		SocketChannel<? extends InteractiveModel, ? super InteractiveModel> socketChannel = this.socketChannel;
-		while (this.isAlive) {
+		while (this.started && !this.cancelled) {
 			try {
 				InteractiveModel interactiveModel = socketChannel.read();
 

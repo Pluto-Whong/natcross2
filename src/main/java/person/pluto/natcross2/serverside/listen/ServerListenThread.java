@@ -162,7 +162,9 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 	 */
 	private void start() {
 		Assert.state(this.canceled == false, "已退出，不得重新启动");
-
+		if (this.isAlive) {
+			return;
+		}
 		this.isAlive = true;
 
 		log.info("server listen port[{}] starting ...", this.getListenPort());
@@ -184,10 +186,11 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 				throw new RuntimeException("nio注册时异常", e);
 			}
 		} else {
-			if (this.myThread == null || !this.myThread.isAlive()) {
-				this.myThread = new Thread(this);
-				this.myThread.setName("server-listen-" + this.formatInfo());
-				this.myThread.start();
+			Thread myThread = this.myThread;
+			if (myThread == null || !myThread.isAlive()) {
+				myThread = this.myThread = new Thread(this);
+				myThread.setName("server-listen-" + this.formatInfo());
+				myThread.start();
 			}
 		}
 
@@ -349,7 +352,7 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 		if ((controlSocket = this.controlSocket) != null) {
 			this.controlSocket = null;
 			try {
-				controlSocket.close();
+				controlSocket.replaceClose();
 			} catch (Exception e) {
 				log.debug("监听服务控制端口关闭异常", e);
 			}

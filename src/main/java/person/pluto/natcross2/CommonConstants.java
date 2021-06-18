@@ -28,13 +28,9 @@ public final class CommonConstants {
 	public static final String tokenKey = "tokenKey";
 
 	/**
-	 * 
 	 * <p>
 	 * 监听、映射对
 	 * </p>
-	 *
-	 * @author Pluto
-	 * @since 2020-04-10 12:38:44
 	 */
 	static class ListenDest {
 		public static ListenDest of(int listenPort, String destIp, int destPort) {

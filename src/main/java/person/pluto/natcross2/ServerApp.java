@@ -18,6 +18,7 @@ import person.pluto.natcross2.serverside.listen.ListenServerControl;
 import person.pluto.natcross2.serverside.listen.config.SimpleListenServerConfig;
 import person.pluto.natcross2.serverside.listen.serversocket.ICreateServerSocket;
 import person.pluto.natcross2.serverside.listen.config.AllSecretSimpleListenServerConfig;
+import person.pluto.natcross2.serverside.listen.config.MultControlListenServerConfig;
 import person.pluto.natcross2.serverside.listen.config.SecretSimpleListenServerConfig;
 
 /**
@@ -63,14 +64,36 @@ public class ServerApp {
 //		simple();
 		secret();
 //		secretAll();
+//		multControlSecret();
+	}
+
+	/**
+	 * 多客户端，控制通道加密
+	 */
+	public static void multControlSecret() throws Exception {
+		// 设置并启动客户端服务线程
+		SecretSimpleClientServiceConfig config = new SecretSimpleClientServiceConfig(CommonConstants.servicePort);
+		// 设置交互aes密钥和签名密钥
+		config.setBaseAesKey(CommonConstants.aesKey);
+		config.setTokenKey(CommonConstants.tokenKey);
+		new ClientServiceThread(config).start();
+
+		for (ListenDest model : CommonConstants.listenDestArray) {
+			// 设置并启动一个穿透端口
+			SecretSimpleListenServerConfig baseListengConfig = new SecretSimpleListenServerConfig(model.listenPort);
+			// 设置交互aes密钥和签名密钥，这里使用和客户端服务相同的密钥，可以根据需要设置不同的
+			baseListengConfig.setBaseAesKey(CommonConstants.aesKey);
+			baseListengConfig.setTokenKey(CommonConstants.tokenKey);
+			baseListengConfig.setCreateServerSocket(createServerSocket);
+
+			MultControlListenServerConfig listengConfig = new MultControlListenServerConfig(baseListengConfig);
+
+			ListenServerControl.createNewListenServer(listengConfig);
+		}
 	}
 
 	/**
 	 * 交互、隧道都进行加密
-	 * 
-	 * @author Pluto
-	 * @since 2020-01-08 17:29:26
-	 * @throws Exception
 	 */
 	public static void secretAll() throws Exception {
 		// 设置并启动客户端服务线程
@@ -94,10 +117,6 @@ public class ServerApp {
 
 	/**
 	 * 交互加密，即交互验证
-	 * 
-	 * @author Pluto
-	 * @since 2020-01-08 17:28:54
-	 * @throws Exception
 	 */
 	public static void secret() throws Exception {
 		// 设置并启动客户端服务线程
@@ -120,10 +139,6 @@ public class ServerApp {
 
 	/**
 	 * 无加密、无验证
-	 * 
-	 * @author Pluto
-	 * @since 2020-01-08 17:29:02
-	 * @throws Exception
 	 */
 	public static void simple() throws Exception {
 		// 设置并启动客户端服务线程

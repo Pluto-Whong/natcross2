@@ -30,10 +30,6 @@ public class ClientApp {
 	 * http路由
 	 * 
 	 * 默认使用交互加密、数据不加密的策略
-	 * 
-	 * @author Pluto
-	 * @since 2020-04-24 11:42:18
-	 * @throws Exception
 	 */
 	public static void secretHttpRoute() throws Exception {
 		HttpRoute[] routes = new HttpRoute[] {
@@ -66,10 +62,6 @@ public class ClientApp {
 
 	/**
 	 * 交互、隧道都进行加密
-	 * 
-	 * @author Pluto
-	 * @since 2020-01-08 17:29:54
-	 * @throws Exception
 	 */
 	public static void secretAll() throws Exception {
 		for (ListenDest model : CommonConstants.listenDestArray) {
@@ -96,10 +88,6 @@ public class ClientApp {
 
 	/**
 	 * 交互加密，即交互验证
-	 * 
-	 * @author Pluto
-	 * @since 2020-01-08 17:30:13
-	 * @throws Exception
 	 */
 	public static void secret() throws Exception {
 		for (ListenDest model : CommonConstants.listenDestArray) {
@@ -124,10 +112,6 @@ public class ClientApp {
 
 	/**
 	 * 无加密、无验证
-	 * 
-	 * @author Pluto
-	 * @since 2020-01-08 17:30:22
-	 * @throws Exception
 	 */
 	public static void simple() throws Exception {
 		for (ListenDest model : CommonConstants.listenDestArray) {
