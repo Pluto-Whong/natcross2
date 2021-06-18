@@ -298,10 +298,11 @@ public final class NioHallows implements Runnable {
 		this.canceled = false;
 		this.alive = true;
 
-		if (this.myThread == null || !this.myThread.isAlive()) {
-			this.myThread = new Thread(this);
-			this.myThread.setName("nio-hallows");
-			this.myThread.start();
+		Thread myThread = this.myThread;
+		if (myThread == null || !myThread.isAlive()) {
+			myThread = this.myThread = new Thread(this);
+			myThread.setName("nio-hallows");
+			myThread.start();
 
 			log.info("NioHallows is started!");
 		}
