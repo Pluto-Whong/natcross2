@@ -1,8 +1,10 @@
 package person.pluto.natcross2.clientside;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.api.IBelongControl;
 import person.pluto.natcross2.api.socketpart.AbsSocketPart;
@@ -24,6 +26,8 @@ public final class ClientControlThread implements Runnable, IBelongControl {
 	private volatile Thread myThread = null;
 
 	private volatile boolean isAlive = false;
+	@Getter
+	private volatile boolean cancelled = false;
 
 	private final Map<String, AbsSocketPart> socketPartMap = new ConcurrentHashMap<>();
 
@@ -46,6 +50,8 @@ public final class ClientControlThread implements Runnable, IBelongControl {
 	 * @throws Exception
 	 */
 	public boolean createControl() throws Exception {
+		this.stopClient();
+
 		if (this.clientAdapter == null) {
 			this.clientAdapter = this.config.newCreateControlAdapter(this);
 		}
@@ -53,7 +59,6 @@ public final class ClientControlThread implements Runnable, IBelongControl {
 		boolean flag = this.clientAdapter.createControlChannel();
 
 		if (!flag) {
-			this.stopClient();
 			return false;
 		}
 
@@ -93,20 +98,24 @@ public final class ClientControlThread implements Runnable, IBelongControl {
 	 * @author Pluto
 	 * @since 2020-01-07 16:13:26
 	 */
-	public void start() {
+	private void start() {
 		this.isAlive = true;
-		if (this.myThread == null || !this.myThread.isAlive()) {
+		this.cancelled = false;
 
-			if (this.clientHeartThread == null || !this.clientHeartThread.isAlive()) {
-				this.clientHeartThread = this.config.newClientHeartThread(this);
-				if (this.clientHeartThread != null) {
-					this.clientHeartThread.start();
+		Thread myThread = this.myThread;
+		if (Objects.isNull(myThread) || !myThread.isAlive()) {
+
+			IClientHeartThread clientHeartThread = this.clientHeartThread;
+			if (Objects.isNull(clientHeartThread) || !clientHeartThread.isAlive()) {
+				clientHeartThread = this.clientHeartThread = this.config.newClientHeartThread(this);
+				if (Objects.nonNull(clientHeartThread)) {
+					clientHeartThread.start();
 				}
 			}
 
-			this.myThread = new Thread(this);
-			this.myThread.setName("client-" + this.formatInfo());
-			this.myThread.start();
+			myThread = this.myThread = new Thread(this);
+			myThread.setName("client-" + this.formatInfo());
+			myThread.start();
 		}
 	}
 
@@ -124,6 +133,15 @@ public final class ClientControlThread implements Runnable, IBelongControl {
 			this.myThread = null;
 			myThread.interrupt();
 		}
+
+		IClientAdapter<?, ?> clientAdapter = this.clientAdapter;
+		if (Objects.nonNull(clientAdapter)) {
+			try {
+				clientAdapter.close();
+			} catch (Exception e) {
+				// do nothing
+			}
+		}
 	}
 
 	/**
@@ -133,6 +151,10 @@ public final class ClientControlThread implements Runnable, IBelongControl {
 	 * @since 2019-07-19 09:19:43
 	 */
 	public void cancell() {
+		if (this.cancelled) {
+			return;
+		}
+		this.cancelled = true;
 
 		this.stopClient();
 
@@ -159,7 +181,7 @@ public final class ClientControlThread implements Runnable, IBelongControl {
 		String[] array = this.socketPartMap.keySet().toArray(new String[0]);
 
 		for (String key : array) {
-			stopSocketPart(key);
+			this.stopSocketPart(key);
 		}
 
 	}

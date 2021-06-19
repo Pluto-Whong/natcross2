@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -254,7 +255,11 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
 
 	@Override
 	public void close() throws Exception {
-		this.socketChannel.closeSocket();
+		SocketChannel<? extends InteractiveModel, ? super InteractiveModel> socketChannel = this.socketChannel;
+		if (Objects.nonNull(socketChannel)) {
+			this.socketChannel = null;
+			socketChannel.closeSocket();
+		}
 	}
 
 	@Override

@@ -43,6 +43,9 @@ public class ClientHeartThread implements IClientHeartThread, Runnable {
 	@Override
 	public void run() {
 		ClientControlThread clientControlThread = this.clientControlThread;
+		if (clientControlThread.isCancelled() || !this.isAlive()) {
+			this.cancel();
+		}
 
 		log.debug("send client heart data to {}", clientControlThread.getListenServerPort());
 		try {
@@ -71,8 +74,6 @@ public class ClientHeartThread implements IClientHeartThread, Runnable {
 
 		if (createControl) {
 			log.info("重新建立连接 {} 成功，在第 {} 次", clientControlThread.getListenServerPort(), this.failCount);
-
-			clientControlThread.start();
 
 			this.failCount = 0;
 			return;
