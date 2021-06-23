@@ -162,13 +162,13 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 			outToInPassway.setBelongControl(this);
 			outToInPassway.setSendSocket(this.sendSocket);
 			outToInPassway.setRecvSocket(this.recvSocket);
-			outToInPassway.setStreamCacheSize(getStreamCacheSize());
+			outToInPassway.setStreamCacheSize(this.getStreamCacheSize());
 
 			SimplePassway inToOutPassway = this.inToOutPassway = new SimplePassway();
 			inToOutPassway.setBelongControl(this);
 			inToOutPassway.setSendSocket(this.recvSocket);
 			inToOutPassway.setRecvSocket(this.sendSocket);
-			inToOutPassway.setStreamCacheSize(getStreamCacheSize());
+			inToOutPassway.setStreamCacheSize(this.getStreamCacheSize());
 
 			outToInPassway.start();
 			inToOutPassway.start();

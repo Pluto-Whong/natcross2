@@ -8,7 +8,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.StampedLock;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -45,9 +45,10 @@ public class HttpRouteClientConfig extends InteractiveClientConfig implements IH
 
 	@Getter
 	private HttpRoute masterRoute = null;
-	private LinkedHashMap<String, HttpRoute> routeMap = new LinkedHashMap<>();
+	// 不可对routeMap进行修改，只得以重新赋值方式重设
+	private Map<String, HttpRoute> routeMap = Collections.emptyMap();
 
-	private final ReentrantReadWriteLock routeLock = new ReentrantReadWriteLock(true);
+	private final StampedLock routeLock = new StampedLock();
 
 	public HttpRouteClientConfig() {
 		this.baseConfig = new InteractiveClientConfig();
@@ -71,13 +72,15 @@ public class HttpRouteClientConfig extends InteractiveClientConfig implements IH
 
 		LinkedHashMap<String, HttpRoute> routeMapTemp = new LinkedHashMap<>(routeMap);
 
-		ReentrantReadWriteLock routeLock = this.routeLock;
-		routeLock.writeLock().lock();
+		StampedLock routeLock = this.routeLock;
+		long stamp = routeLock.writeLock();
+		try {
+			this.masterRoute = masterRoute;
+			this.routeMap = routeMapTemp;
+		} finally {
+			routeLock.unlockWrite(stamp);
+		}
 
-		this.masterRoute = masterRoute;
-		this.routeMap = routeMapTemp;
-
-		routeLock.writeLock().unlock();
 	}
 
 	/**
@@ -103,21 +106,24 @@ public class HttpRouteClientConfig extends InteractiveClientConfig implements IH
 			return;
 		}
 
-		ReentrantReadWriteLock routeLock = this.routeLock;
-		routeLock.writeLock().lock();
+		StampedLock routeLock = this.routeLock;
+		long stamp = routeLock.writeLock();
 		try {
 			if (Objects.isNull(this.masterRoute)) {
 				this.masterRoute = httpRoutes[0];
 			}
-			LinkedHashMap<String, HttpRoute> routeMap = this.routeMap;
+
+			LinkedHashMap<String, HttpRoute> routeMap = new LinkedHashMap<>(this.routeMap);
 			for (HttpRoute model : httpRoutes) {
 				routeMap.put(model.getHost(), model);
 				if (model.isMaster()) {
 					this.masterRoute = model;
 				}
 			}
+
+			this.routeMap = routeMap;
 		} finally {
-			routeLock.writeLock().unlock();
+			routeLock.unlock(stamp);
 		}
 	}
 
@@ -133,23 +139,24 @@ public class HttpRouteClientConfig extends InteractiveClientConfig implements IH
 			return;
 		}
 
-		ReentrantReadWriteLock routeLock = this.routeLock;
-		routeLock.writeLock().lock();
+		StampedLock routeLock = this.routeLock;
+		long stamp = routeLock.writeLock();
 		try {
-			LinkedHashMap<String, HttpRoute> routeMap = this.routeMap;
+			LinkedHashMap<String, HttpRoute> routeMap = new LinkedHashMap<>(this.routeMap);
 			HttpRoute masterRoute = this.masterRoute;
 
 			String masterRouteHost = masterRoute.getHost();
 			for (String host : hosts) {
 				routeMap.remove(host);
 				if (StringUtils.equals(masterRouteHost, host)) {
-					this.masterRoute = null;
+					masterRoute = this.masterRoute = null;
 
 					// 减少string比较复杂度
 					masterRouteHost = null;
-					masterRoute = null;
 				}
 			}
+
+			this.routeMap = routeMap;
 
 			if (Objects.isNull(masterRoute)) {
 				Iterator<HttpRoute> iterator = routeMap.values().iterator();
@@ -172,7 +179,7 @@ public class HttpRouteClientConfig extends InteractiveClientConfig implements IH
 				}
 			}
 		} finally {
-			routeLock.writeLock().unlock();
+			routeLock.unlock(stamp);
 		}
 
 	}
@@ -214,39 +221,36 @@ public class HttpRouteClientConfig extends InteractiveClientConfig implements IH
 
 	@Override
 	public HttpRoute pickRouteByHost(String host) {
-		ReentrantReadWriteLock routeLock = this.routeLock;
-		routeLock.readLock().lock();
-		try {
-			return this.routeMap.get(host);
-		} finally {
-			routeLock.readLock().unlock();
-		}
+		return this.routeMap.get(host);
 	}
 
 	@Override
 	public HttpRoute pickMasterRoute() {
-		ReentrantReadWriteLock routeLock = this.routeLock;
-		routeLock.readLock().lock();
-		try {
-			return this.masterRoute;
-		} finally {
-			routeLock.readLock().unlock();
-		}
+		return this.masterRoute;
 	}
 
 	@Override
 	public HttpRoute pickEffectiveRoute(String host) {
-		HttpRoute httpRoute;
 
-		ReentrantReadWriteLock routeLock = this.routeLock;
-		routeLock.readLock().lock();
-		try {
-			httpRoute = this.routeMap.get(host);
-			if (Objects.isNull(httpRoute)) {
-				httpRoute = this.masterRoute;
+		StampedLock routeLock = this.routeLock;
+		long stamp = routeLock.tryOptimisticRead();
+
+		Map<String, HttpRoute> routeMap = this.routeMap;
+		HttpRoute masterRoute = this.masterRoute;
+
+		if (!routeLock.validate(stamp)) {
+			stamp = routeLock.readLock();
+			try {
+				routeMap = this.routeMap;
+				masterRoute = this.masterRoute;
+			} finally {
+				routeLock.unlockRead(stamp);
 			}
-		} finally {
-			routeLock.readLock().unlock();
+		}
+
+		HttpRoute httpRoute = routeMap.get(host);
+		if (Objects.isNull(httpRoute)) {
+			httpRoute = masterRoute;
 		}
 
 		Assert.state(Objects.nonNull(httpRoute), "未能获取有效的路由");
