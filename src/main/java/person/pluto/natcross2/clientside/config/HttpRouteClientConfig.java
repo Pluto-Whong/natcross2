@@ -123,7 +123,7 @@ public class HttpRouteClientConfig extends InteractiveClientConfig implements IH
 
 			this.routeMap = routeMap;
 		} finally {
-			routeLock.unlock(stamp);
+			routeLock.unlockWrite(stamp);
 		}
 	}
 
@@ -149,14 +149,12 @@ public class HttpRouteClientConfig extends InteractiveClientConfig implements IH
 			for (String host : hosts) {
 				routeMap.remove(host);
 				if (StringUtils.equals(masterRouteHost, host)) {
-					masterRoute = this.masterRoute = null;
+					masterRoute = null;
 
 					// 减少string比较复杂度
 					masterRouteHost = null;
 				}
 			}
-
-			this.routeMap = routeMap;
 
 			if (Objects.isNull(masterRoute)) {
 				Iterator<HttpRoute> iterator = routeMap.values().iterator();
@@ -172,14 +170,16 @@ public class HttpRouteClientConfig extends InteractiveClientConfig implements IH
 						}
 					}
 
-					this.masterRoute = masterRoute;
 				} else {
 					log.warn("{}:{} 路由是空的，若需要重新设置，请使用preset进行设置", this.getClientServiceIp(),
 							this.getClientServicePort());
 				}
 			}
+
+			this.masterRoute = masterRoute;
+			this.routeMap = routeMap;
 		} finally {
-			routeLock.unlock(stamp);
+			routeLock.unlockWrite(stamp);
 		}
 
 	}
@@ -217,16 +217,6 @@ public class HttpRouteClientConfig extends InteractiveClientConfig implements IH
 		httpRouteSocketPart.setStreamCacheSize(this.getStreamCacheSize());
 
 		return httpRouteSocketPart;
-	}
-
-	@Override
-	public HttpRoute pickRouteByHost(String host) {
-		return this.routeMap.get(host);
-	}
-
-	@Override
-	public HttpRoute pickMasterRoute() {
-		return this.masterRoute;
 	}
 
 	@Override

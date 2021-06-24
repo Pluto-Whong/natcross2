@@ -48,7 +48,7 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 	 * @throws Exception
 	 */
 	protected void routeHost() throws Exception {
-		HttpRoute willConnect = null;
+		String host = null;
 
 		BufferedInputStream inputStream = new BufferedInputStream(this.sendSocket.getInputStream());
 
@@ -76,11 +76,11 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 				// 这里matchFlag与lineCount不相等的频次比例较大，先比较
 				matchFlag == lineCount
 						// 肯定要小于了呀
-						&& lineCount < hostMatcher.length
-						// 如果是冒号的位置，需要完全相等
-						&& (matchFlag == colonIndex ? read == hostMatcher[matchFlag]
-								// 大写转小写，说好的可以利用 : 0x20 位是1 的特性呢😭
-								: (read | 0x20) == hostMatcher[matchFlag])) {
+						&& matchFlag < hostMatcher.length
+						// 大写转小写，如果是冒号的位置，需要完全相等
+						&& hostMatcher[matchFlag] == (read | 0x20) && (matchFlag != colonIndex || colonByte == read)
+				//
+				) {
 					matchFlag++;
 				}
 			}
@@ -107,21 +107,23 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 					lineBufferStream.reset();
 
 					int left, right;
+					byte rightByte;
 					for (left = right = hostMatcher.length; right < byteArray.length; right++) {
 						if (byteArray[left] == ' ') {
 							// 左边先去掉空白，去除期间right不用判断
 							left++;
-						} else if (byteArray[right] == colonByte || byteArray[right] == ' ' || byteArray[right] == '\r'
-								|| byteArray[right] == '\n') {
+						} else if (
+						//
+						(rightByte = byteArray[right]) == colonByte
+								//
+								|| rightByte == ' ' || rightByte == '\r' || rightByte == '\n') {
 							// right位置到left位置必有字符，遇到空白或 : 则停下，与left中间的组合为host地址
 							break;
 						}
 					}
 
 					// 将缓存中的数据进行字符串化，根据http标准，字符集为 ISO-8859-1
-					String host = new String(byteArray, left, right - left, httpCharset);
-
-					willConnect = this.httpRouting.pickEffectiveRoute(host);
+					host = new String(byteArray, left, right - left, httpCharset);
 
 					break;
 				} else {
@@ -137,6 +139,7 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 
 		Socket recvSocket = this.recvSocket;
 
+		HttpRoute willConnect = this.httpRouting.pickEffectiveRoute(host);
 		InetSocketAddress destAddress = new InetSocketAddress(willConnect.getDestIp(), willConnect.getDestPort());
 		recvSocket.connect(destAddress);
 
