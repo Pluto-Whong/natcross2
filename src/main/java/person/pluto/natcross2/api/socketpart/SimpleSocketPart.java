@@ -2,12 +2,14 @@ package person.pluto.natcross2.api.socketpart;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.concurrent.CountDownLatch;
 
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.api.IBelongControl;
 import person.pluto.natcross2.api.passway.SimplePassway;
+import person.pluto.natcross2.utils.Assert;
 
 /**
  * 
@@ -24,11 +26,13 @@ public class SimpleSocketPart extends AbsSocketPart implements IBelongControl {
 	protected SimplePassway outToInPassway;
 	protected SimplePassway inToOutPassway;
 
+	private final CountDownLatch cancellLatch = new CountDownLatch(2);
+
 	@Getter
 	@Setter
 	private int streamCacheSize = 8192;
 
-	private volatile boolean canceled = false;
+	protected volatile boolean canceled = false;
 
 	public SimpleSocketPart(IBelongControl belongThread) {
 		super(belongThread);
@@ -96,6 +100,8 @@ public class SimpleSocketPart extends AbsSocketPart implements IBelongControl {
 
 	@Override
 	public boolean createPassWay() {
+		Assert.state(!this.canceled, "不得重启已退出的socketPart");
+
 		if (this.isAlive) {
 			return true;
 		}
@@ -126,7 +132,11 @@ public class SimpleSocketPart extends AbsSocketPart implements IBelongControl {
 
 	@Override
 	public void noticeStop() {
-		this.stop();
+		CountDownLatch cancellLatch = this.cancellLatch;
+		cancellLatch.countDown();
+		if (cancellLatch.getCount() <= 0) {
+			this.stop();
+		}
 	}
 
 }

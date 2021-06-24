@@ -160,16 +160,10 @@ public class SecretPassway implements Runnable {
 		NioHallows.release(this.recvSocket.getChannel());
 
 		try {
-			Socket recvSocket;
-			if ((recvSocket = this.recvSocket) != null) {
-				this.recvSocket = null; // help GC
-				recvSocket.close();
-			}
-
 			Socket sendSocket = this.sendSocket;
 			if ((sendSocket = this.sendSocket) != null) {
-				this.sendSocket = null; // help GC
-				sendSocket.close();
+				// TCP 挥手步骤，对方调用 shutdownOutput 后等价完成 socket.close
+				sendSocket.shutdownOutput();
 			}
 		} catch (IOException e) {
 			// do no thing

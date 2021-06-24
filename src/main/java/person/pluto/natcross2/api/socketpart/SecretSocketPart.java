@@ -2,6 +2,7 @@ package person.pluto.natcross2.api.socketpart;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.concurrent.CountDownLatch;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -10,6 +11,7 @@ import person.pluto.natcross2.api.IBelongControl;
 import person.pluto.natcross2.api.passway.SecretPassway;
 import person.pluto.natcross2.api.passway.SecretPassway.Mode;
 import person.pluto.natcross2.api.secret.ISecret;
+import person.pluto.natcross2.utils.Assert;
 
 /**
  * 
@@ -30,11 +32,13 @@ public class SecretSocketPart extends AbsSocketPart implements IBelongControl {
 	private SecretPassway noToSecretPassway;
 	private SecretPassway secretToNoPassway;
 
+	private final CountDownLatch cancellLatch = new CountDownLatch(2);
+
 	@Getter
 	@Setter
 	private int streamCacheSize = 8192;
 
-	private volatile boolean canceled = false;
+	protected volatile boolean canceled = false;
 
 	public SecretSocketPart(IBelongControl belongThread) {
 		super(belongThread);
@@ -86,6 +90,8 @@ public class SecretSocketPart extends AbsSocketPart implements IBelongControl {
 
 	@Override
 	public boolean createPassWay() {
+		Assert.state(!this.canceled, "不得重启已退出的socketPart");
+
 		if (this.isAlive) {
 			return true;
 		}
@@ -135,7 +141,11 @@ public class SecretSocketPart extends AbsSocketPart implements IBelongControl {
 
 	@Override
 	public void noticeStop() {
-		this.stop();
+		CountDownLatch cancellLatch = this.cancellLatch;
+		cancellLatch.countDown();
+		if (cancellLatch.getCount() <= 0) {
+			this.stop();
+		}
 	}
 
 }

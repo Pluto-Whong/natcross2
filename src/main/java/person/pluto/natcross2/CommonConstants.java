@@ -18,7 +18,7 @@ public final class CommonConstants {
 	// 映射对
 	public static ListenDest[] listenDestArray = new ListenDest[] {
 			//
-			ListenDest.of(8081, "127.0.0.1", 8080)
+			ListenDest.of(8081, "127.0.0.1", 8080),
 			//
 	};
 

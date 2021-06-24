@@ -12,6 +12,7 @@ import person.pluto.natcross2.api.IBelongControl;
 import person.pluto.natcross2.api.IHttpRouting;
 import person.pluto.natcross2.api.passway.SimplePassway;
 import person.pluto.natcross2.model.HttpRoute;
+import person.pluto.natcross2.utils.Assert;
 import person.pluto.natcross2.utils.Tools;
 
 /**
@@ -151,6 +152,8 @@ public class HttpRouteSocketPart extends SimpleSocketPart {
 
 	@Override
 	public boolean createPassWay() {
+		Assert.state(!this.canceled, "不得重启已退出的socketPart");
+
 		if (this.isAlive) {
 			return true;
 		}
