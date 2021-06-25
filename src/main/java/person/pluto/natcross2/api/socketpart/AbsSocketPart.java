@@ -22,9 +22,12 @@ import person.pluto.natcross2.api.IBelongControl;
 @Data
 public abstract class AbsSocketPart {
 
-	@Setter(AccessLevel.NONE)
-	protected boolean isAlive = false;
-	@Setter(AccessLevel.NONE)
+	@Setter(AccessLevel.PRIVATE)
+	protected volatile boolean isAlive = false;
+	@Setter(AccessLevel.PRIVATE)
+	protected volatile boolean canceled = false;
+
+	@Setter(AccessLevel.PRIVATE)
 	protected LocalDateTime createTime;
 
 	/**
@@ -61,6 +64,10 @@ public abstract class AbsSocketPart {
 	 * @return
 	 */
 	public boolean isValid() {
+		if (this.canceled) {
+			return false;
+		}
+
 		if (this.isAlive) {
 			return true;
 		}

@@ -38,8 +38,6 @@ public class SecretSocketPart extends AbsSocketPart implements IBelongControl {
 	@Setter
 	private int streamCacheSize = 8192;
 
-	protected volatile boolean canceled = false;
-
 	public SecretSocketPart(IBelongControl belongThread) {
 		super(belongThread);
 	}

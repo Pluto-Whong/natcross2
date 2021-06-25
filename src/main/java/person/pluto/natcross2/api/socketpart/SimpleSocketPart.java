@@ -32,8 +32,6 @@ public class SimpleSocketPart extends AbsSocketPart implements IBelongControl {
 	@Setter
 	private int streamCacheSize = 8192;
 
-	protected volatile boolean canceled = false;
-
 	public SimpleSocketPart(IBelongControl belongThread) {
 		super(belongThread);
 	}
