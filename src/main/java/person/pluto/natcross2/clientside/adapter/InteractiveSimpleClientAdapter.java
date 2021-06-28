@@ -189,7 +189,7 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
 
 		// 将socket伙伴放入客户端线程进行统一管理
 		this.clientControlThread.putSocketPart(serverWaitModel.getSocketPartKey(), socketPart);
-		return socketPart.createPassWay();
+		return true;
 	}
 
 	@Override
