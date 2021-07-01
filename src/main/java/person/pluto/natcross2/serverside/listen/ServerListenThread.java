@@ -34,7 +34,7 @@ import person.pluto.natcross2.utils.Assert;
  * @since 2019-07-05 10:53:33
  */
 @Slf4j
-public final class ServerListenThread implements Runnable, INioProcesser, IBelongControl {
+public final class ServerListenThread implements Runnable, INioProcesser, IBelongControl, IServerListen {
 
 	private volatile Thread myThread = null;
 
@@ -362,6 +362,13 @@ public final class ServerListenThread implements Runnable, INioProcesser, IBelon
 		controlSocketNew.startRecv();
 		this.controlSocket = controlSocketNew;
 		this.start();
+	}
+
+	@Override
+	public synchronized void controlCloseNotice(IControlSocket controlSocket) {
+		if (Objects.equals(controlSocket, this.controlSocket)) {
+			this.stopListen();
+		}
 	}
 
 	/**

@@ -1,6 +1,6 @@
 package person.pluto.natcross2.serverside.listen.control;
 
-import person.pluto.natcross2.serverside.listen.ServerListenThread;
+import person.pluto.natcross2.serverside.listen.IServerListen;
 
 /**
  * 
@@ -67,8 +67,8 @@ public interface IControlSocket {
 	 * 
 	 * @author Pluto
 	 * @since 2020-04-15 13:10:25
-	 * @param serverListenThread
+	 * @param serverListen
 	 */
-	void setServerListen(ServerListenThread serverListenThread);
+	void setServerListen(IServerListen serverListen);
 
 }

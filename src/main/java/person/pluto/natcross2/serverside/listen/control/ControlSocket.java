@@ -12,7 +12,7 @@ import person.pluto.natcross2.model.InteractiveModel;
 import person.pluto.natcross2.model.enumeration.InteractiveTypeEnum;
 import person.pluto.natcross2.model.enumeration.NatcrossResultEnum;
 import person.pluto.natcross2.model.interactive.ServerWaitModel;
-import person.pluto.natcross2.serverside.listen.ServerListenThread;
+import person.pluto.natcross2.serverside.listen.IServerListen;
 import person.pluto.natcross2.serverside.listen.recv.IRecvHandler;
 
 /**
@@ -35,7 +35,7 @@ public class ControlSocket implements IControlSocket, Runnable {
 
 	protected List<IRecvHandler<? super InteractiveModel, ? extends InteractiveModel>> recvHandlerList = new LinkedList<>();
 
-	protected ServerListenThread serverListenThread;
+	protected IServerListen serverListen;
 
 	public ControlSocket(SocketChannel<? extends InteractiveModel, ? super InteractiveModel> socketChannel) {
 		this.socketChannel = socketChannel;
@@ -65,6 +65,9 @@ public class ControlSocket implements IControlSocket, Runnable {
 
 	@Override
 	public void close() {
+		if (this.cancelled) {
+			return;
+		}
 		this.cancelled = true;
 
 		Thread myThread;
@@ -79,6 +82,12 @@ public class ControlSocket implements IControlSocket, Runnable {
 			} catch (IOException e) {
 				// do no thing
 			}
+		}
+
+		IServerListen serverListenThread = this.serverListen;
+		if (Objects.nonNull(serverListenThread)) {
+			this.serverListen = null;
+			serverListenThread.controlCloseNotice(this);
 		}
 
 	}
@@ -148,15 +157,15 @@ public class ControlSocket implements IControlSocket, Runnable {
 	}
 
 	private String formatServerListenInfo() {
-		if (Objects.isNull(this.serverListenThread)) {
+		if (Objects.isNull(this.serverListen)) {
 			return null;
 		}
-		return this.serverListenThread.formatInfo();
+		return this.serverListen.formatInfo();
 	}
 
 	@Override
-	public void setServerListen(ServerListenThread serverListenThread) {
-		this.serverListenThread = serverListenThread;
+	public void setServerListen(IServerListen serverListen) {
+		this.serverListen = serverListen;
 	}
 
 	/**

@@ -11,26 +11,26 @@ package person.pluto.natcross2.api;
  */
 public interface IBelongControl {
 
-    /**
-     * 无标记通知
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:08:46
-     */
-    default void noticeStop() {
-        // do no thing
-    }
+	/**
+	 * 无标记通知
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 16:08:46
+	 */
+	default void noticeStop() {
+		// do no thing
+	}
 
-    /**
-     * 有标记通知
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:08:55
-     * @param socketPartKey
-     * @return
-     */
-    default boolean stopSocketPart(String socketPartKey) {
-        return true;
-    }
+	/**
+	 * 有标记通知
+	 * 
+	 * @author Pluto
+	 * @since 2020-01-08 16:08:55
+	 * @param socketPartKey
+	 * @return
+	 */
+	default boolean stopSocketPart(String socketPartKey) {
+		return true;
+	}
 
 }

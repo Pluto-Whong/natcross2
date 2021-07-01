@@ -4,7 +4,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Objects;
 
-import person.pluto.natcross2.serverside.listen.ServerListenThread;
+import person.pluto.natcross2.serverside.listen.IServerListen;
 
 /**
  * <p>
@@ -17,6 +17,8 @@ import person.pluto.natcross2.serverside.listen.ServerListenThread;
 public class MultControlSocket implements IControlSocket {
 
 	protected final LinkedList<IControlSocket> controlSockets = new LinkedList<>();
+
+	protected IServerListen serverListen;
 
 	/**
 	 * 增加控制socket
@@ -114,15 +116,32 @@ public class MultControlSocket implements IControlSocket {
 		}
 	}
 
+	private synchronized boolean removeControlScoket(IControlSocket controlSocet) {
+		return controlSockets.remove(controlSocet);
+	}
+
 	@Override
-	public synchronized void setServerListen(ServerListenThread serverListenThread) {
+	public synchronized void setServerListen(final IServerListen serverListen) {
+		this.serverListen = serverListen;
+		IServerListen serverListenTemp = new IServerListen() {
+			@Override
+			public String formatInfo() {
+				return serverListen.formatInfo();
+			}
+
+			@Override
+			public void controlCloseNotice(IControlSocket controlSocket) {
+				MultControlSocket.this.removeControlScoket(controlSocket);
+			}
+		};
+
 		LinkedList<IControlSocket> controlSockets = this.controlSockets;
 
 		Iterator<IControlSocket> iterator = controlSockets.iterator();
 		for (; iterator.hasNext();) {
 			IControlSocket controlSocket = iterator.next();
 			try {
-				controlSocket.setServerListen(serverListenThread);
+				controlSocket.setServerListen(serverListenTemp);
 			} catch (Throwable e) {
 				// do nothing
 			}
