@@ -1,5 +1,6 @@
 package person.pluto.natcross2.model.enumeration;
 
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -10,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
  * @author Pluto
  * @since 2019-07-17 09:50:33
  */
+@Getter
 public enum InteractiveTypeEnum {
     //
     UNKNOWN("未知"),
@@ -17,6 +19,8 @@ public enum InteractiveTypeEnum {
     COMMON_REPLY("通用回复标签"),
     //
     HEART_TEST("发送心跳"),
+    //
+    HEART_TEST_REPLY("心跳测试回复"),
     //
     SERVER_WAIT_CLIENT("需求客户端建立连接"),
     //
@@ -44,7 +48,4 @@ public enum InteractiveTypeEnum {
         return null;
     }
 
-    public String getDescribe() {
-        return describe;
-    }
 }

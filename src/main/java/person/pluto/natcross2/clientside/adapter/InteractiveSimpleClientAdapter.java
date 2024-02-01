@@ -17,6 +17,7 @@ import person.pluto.natcross2.model.interactive.ServerWaitModel;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.time.LocalDateTime;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -46,13 +47,15 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
      */
     private SocketChannel<? extends InteractiveModel, ? super InteractiveModel> socketChannel;
 
+    private LocalDateTime serverHeartLastRecvTime = LocalDateTime.now();
+
     /**
      * 客户端消息接收处理链
      */
     protected List<IClientHandler<? super InteractiveModel, ? extends InteractiveModel>> messageHandlerList = new LinkedList<>();
 
     public InteractiveSimpleClientAdapter(ClientControlThread clientControlThread,
-            IClientConfig<InteractiveModel, InteractiveModel> clientConfig) {
+                                          IClientConfig<InteractiveModel, InteractiveModel> clientConfig) {
         this.clientControlThread = clientControlThread;
         this.config = clientConfig;
     }
@@ -250,6 +253,18 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
     public void sendHeartTest() throws Exception {
         InteractiveModel interactiveModel = InteractiveModel.of(InteractiveTypeEnum.HEART_TEST, null);
         this.socketChannel.writeAndFlush(interactiveModel);
+    }
+
+    @Override
+    public LocalDateTime obtainServerHeartLastRecvTime() {
+        return this.serverHeartLastRecvTime;
+    }
+
+    @Override
+    public LocalDateTime resetServerHeartLastRecvTime(LocalDateTime time) {
+        LocalDateTime tempTime = this.serverHeartLastRecvTime;
+        this.serverHeartLastRecvTime = time;
+        return tempTime;
     }
 
 }

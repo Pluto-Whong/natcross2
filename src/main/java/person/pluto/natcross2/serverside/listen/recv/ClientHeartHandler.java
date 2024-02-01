@@ -19,12 +19,12 @@ public class ClientHeartHandler implements IRecvHandler<InteractiveModel, Intera
 
     @Override
     public boolean proc(InteractiveModel model,
-            SocketChannel<? extends InteractiveModel, ? super InteractiveModel> channel) throws Exception {
+                        SocketChannel<? extends InteractiveModel, ? super InteractiveModel> channel) throws Exception {
         InteractiveTypeEnum interactiveTypeEnum = InteractiveTypeEnum.getEnumByName(model.getInteractiveType());
         if (!InteractiveTypeEnum.HEART_TEST.equals(interactiveTypeEnum)) {
             return false;
         }
-        InteractiveModel sendModel = InteractiveModel.of(model.getInteractiveSeq(), InteractiveTypeEnum.COMMON_REPLY,
+        InteractiveModel sendModel = InteractiveModel.of(model.getInteractiveSeq(), InteractiveTypeEnum.HEART_TEST_REPLY,
                 NatcrossResultEnum.SUCCESS.toResultModel());
 
         channel.writeAndFlush(sendModel);

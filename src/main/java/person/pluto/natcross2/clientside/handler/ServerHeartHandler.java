@@ -19,17 +19,23 @@ public class ServerHeartHandler implements IClientHandler<InteractiveModel, Inte
 
     @Override
     public boolean proc(InteractiveModel model,
-            IClientAdapter<? extends InteractiveModel, ? super InteractiveModel> clientAdapter) throws Exception {
+                        IClientAdapter<? extends InteractiveModel, ? super InteractiveModel> clientAdapter) throws Exception {
         InteractiveTypeEnum interactiveTypeEnum = InteractiveTypeEnum.getEnumByName(model.getInteractiveType());
-        if (!InteractiveTypeEnum.HEART_TEST.equals(interactiveTypeEnum)) {
-            return false;
+        if (InteractiveTypeEnum.HEART_TEST.equals(interactiveTypeEnum)) {
+            clientAdapter.resetServerHeartLastRecvTime();
+
+            InteractiveModel sendModel = InteractiveModel.of(model.getInteractiveSeq(), InteractiveTypeEnum.HEART_TEST_REPLY,
+                    NatcrossResultEnum.SUCCESS.toResultModel());
+            clientAdapter.getSocketChannel().writeAndFlush(sendModel);
+
+            return true;
+        } else if (InteractiveTypeEnum.HEART_TEST_REPLY.equals(interactiveTypeEnum)) {
+            clientAdapter.resetServerHeartLastRecvTime();
+
+            return true;
         }
-        InteractiveModel sendModel = InteractiveModel.of(model.getInteractiveSeq(), InteractiveTypeEnum.COMMON_REPLY,
-                NatcrossResultEnum.SUCCESS.toResultModel());
 
-        clientAdapter.getSocketChannel().writeAndFlush(sendModel);
-
-        return true;
+        return false;
     }
 
 }

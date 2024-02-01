@@ -3,6 +3,8 @@ package person.pluto.natcross2.clientside.adapter;
 import person.pluto.natcross2.channel.SocketChannel;
 import person.pluto.natcross2.model.interactive.ServerWaitModel;
 
+import java.time.LocalDateTime;
+
 /**
  * <p>
  * 客户端适配器
@@ -51,6 +53,32 @@ public interface IClientAdapter<R, W> {
      * @throws Exception
      */
     void sendHeartTest() throws Exception;
+
+    /**
+     * 获取服务端最后心跳测试/回复的时间
+     *
+     * @return
+     */
+    LocalDateTime obtainServerHeartLastRecvTime();
+
+    /**
+     * 重设服务端最后心跳测试/回复时间
+     * <p>
+     * 取 {@link LocalDateTime#now()} 为 设定值
+     *
+     * @return
+     */
+    default LocalDateTime resetServerHeartLastRecvTime() {
+        return this.resetServerHeartLastRecvTime(LocalDateTime.now());
+    }
+
+    /**
+     * 重设服务端最后心跳测试/回复时间
+     *
+     * @param time 自有设置
+     * @return
+     */
+    LocalDateTime resetServerHeartLastRecvTime(LocalDateTime time);
 
     /**
      * 获取socket读写通道

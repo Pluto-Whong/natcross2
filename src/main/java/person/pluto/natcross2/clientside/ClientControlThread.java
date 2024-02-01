@@ -8,6 +8,7 @@ import person.pluto.natcross2.clientside.adapter.IClientAdapter;
 import person.pluto.natcross2.clientside.config.IClientConfig;
 import person.pluto.natcross2.clientside.heart.IClientHeartThread;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -211,6 +212,15 @@ public final class ClientControlThread implements Runnable, IBelongControl {
     public void sendHeartTest() throws Exception {
         // 无需判空，空指针异常也是异常
         this.clientAdapter.sendHeartTest();
+    }
+
+    /**
+     * 获取服务端上次心跳测试成功时间
+     *
+     * @return
+     */
+    public LocalDateTime obtainServerHeartLastRecvTime() {
+        return this.clientAdapter.obtainServerHeartLastRecvTime();
     }
 
     /**

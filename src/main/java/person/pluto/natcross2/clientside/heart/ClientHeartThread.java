@@ -6,6 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.clientside.ClientControlThread;
 import person.pluto.natcross2.executor.NatcrossExecutor;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;
 
@@ -30,6 +33,9 @@ public class ClientHeartThread implements IClientHeartThread, Runnable {
     @Setter
     @Getter
     private int tryRecipientCount = 10;
+    @Setter
+    @Getter
+    private long serverHeartMaxMissDurationSeconds = 25L;
 
     private volatile ScheduledFuture<?> scheduledFuture;
 
@@ -37,6 +43,18 @@ public class ClientHeartThread implements IClientHeartThread, Runnable {
 
     public ClientHeartThread(ClientControlThread clientControlThread) {
         this.clientControlThread = clientControlThread;
+    }
+
+    /**
+     * 检查服务端是否心跳超时
+     *
+     * @param clientControlThread
+     * @param timeoutSeconds
+     * @return
+     */
+    private boolean lastServerHeartEffective(ClientControlThread clientControlThread, Long timeoutSeconds) {
+        return Duration.between(clientControlThread.obtainServerHeartLastRecvTime(), LocalDateTime.now())
+                .get(ChronoUnit.SECONDS) < timeoutSeconds;
     }
 
     @Override
@@ -48,10 +66,13 @@ public class ClientHeartThread implements IClientHeartThread, Runnable {
 
         log.debug("send client heart data to {}", clientControlThread.getListenServerPort());
         try {
-            clientControlThread.sendHeartTest();
-            this.failCount = 0;
+            // 如果服务端心跳超时则直接判定为失败，否则进行心跳检查
+            if (this.lastServerHeartEffective(clientControlThread, this.serverHeartMaxMissDurationSeconds)) {
+                clientControlThread.sendHeartTest();
+                this.failCount = 0;
 
-            return;
+                return;
+            }
         } catch (Exception e) {
             log.warn("{} 心跳异常", clientControlThread.getListenServerPort());
             clientControlThread.stopClient();
