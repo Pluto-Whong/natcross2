@@ -1,10 +1,10 @@
 package person.pluto.natcross2.nio;
 
-import java.nio.channels.SelectableChannel;
-import java.nio.channels.SelectionKey;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
+
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.SelectionKey;
 
 /**
  * <p>
@@ -18,24 +18,24 @@ import lombok.Data;
 @AllArgsConstructor(staticName = "of")
 public class ProcesserHolder {
 
-	private SelectableChannel channel;
+    private SelectableChannel channel;
 
-	private int interestOps;
+    private int interestOps;
 
-	private INioProcesser processer;
+    private INioProcessor processor;
 
-	/**
-	 * 执行事件的任务
-	 *
-	 * @param key
-	 * @author Pluto
-	 * @since 2021-04-26 16:35:36
-	 */
-	public void proccess(SelectionKey key) {
-		this.processer.proccess(key);
+    /**
+     * 执行事件的任务
+     *
+     * @param key
+     * @author Pluto
+     * @since 2021-04-26 16:35:36
+     */
+    public void process(SelectionKey key) {
+        this.processor.process(key);
 
-		if (!NioHallows.reRegisterByKey(key, this.interestOps)) {
-			NioHallows.release(this.channel);
-		}
-	}
+        if (!NioHallows.reRegisterByKey(key, this.interestOps)) {
+            NioHallows.release(this.channel);
+        }
+    }
 }

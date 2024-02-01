@@ -15,21 +15,21 @@ import person.pluto.natcross2.model.enumeration.NatcrossResultEnum;
  */
 public class ServerHeartHandler implements IClientHandler<InteractiveModel, InteractiveModel> {
 
-	public static final ServerHeartHandler INSTANCE = new ServerHeartHandler();
+    public static final ServerHeartHandler INSTANCE = new ServerHeartHandler();
 
-	@Override
-	public boolean proc(InteractiveModel model,
-			IClientAdapter<? extends InteractiveModel, ? super InteractiveModel> clientAdapter) throws Exception {
-		InteractiveTypeEnum interactiveTypeEnum = InteractiveTypeEnum.getEnumByName(model.getInteractiveType());
-		if (!InteractiveTypeEnum.HEART_TEST.equals(interactiveTypeEnum)) {
-			return false;
-		}
-		InteractiveModel sendModel = InteractiveModel.of(model.getInteractiveSeq(), InteractiveTypeEnum.COMMON_REPLY,
-				NatcrossResultEnum.SUCCESS.toResultModel());
+    @Override
+    public boolean proc(InteractiveModel model,
+            IClientAdapter<? extends InteractiveModel, ? super InteractiveModel> clientAdapter) throws Exception {
+        InteractiveTypeEnum interactiveTypeEnum = InteractiveTypeEnum.getEnumByName(model.getInteractiveType());
+        if (!InteractiveTypeEnum.HEART_TEST.equals(interactiveTypeEnum)) {
+            return false;
+        }
+        InteractiveModel sendModel = InteractiveModel.of(model.getInteractiveSeq(), InteractiveTypeEnum.COMMON_REPLY,
+                NatcrossResultEnum.SUCCESS.toResultModel());
 
-		clientAdapter.getSocketChannel().writeAndFlush(sendModel);
+        clientAdapter.getSocketChannel().writeAndFlush(sendModel);
 
-		return true;
-	}
+        return true;
+    }
 
 }

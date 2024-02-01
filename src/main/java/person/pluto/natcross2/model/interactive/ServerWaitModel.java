@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 
  * <p>
  * 服务端等待建立隧道模型
  * </p>

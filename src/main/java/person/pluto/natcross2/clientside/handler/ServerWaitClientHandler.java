@@ -15,20 +15,20 @@ import person.pluto.natcross2.model.interactive.ServerWaitModel;
  */
 public class ServerWaitClientHandler implements IClientHandler<InteractiveModel, InteractiveModel> {
 
-	public static final ServerWaitClientHandler INSTANCE = new ServerWaitClientHandler();
+    public static final ServerWaitClientHandler INSTANCE = new ServerWaitClientHandler();
 
-	@Override
-	public boolean proc(InteractiveModel model,
-			IClientAdapter<? extends InteractiveModel, ? super InteractiveModel> clientAdapter) throws Exception {
-		InteractiveTypeEnum interactiveTypeEnum = InteractiveTypeEnum.getEnumByName(model.getInteractiveType());
-		if (!InteractiveTypeEnum.SERVER_WAIT_CLIENT.equals(interactiveTypeEnum)) {
-			return false;
-		}
+    @Override
+    public boolean proc(InteractiveModel model,
+            IClientAdapter<? extends InteractiveModel, ? super InteractiveModel> clientAdapter) throws Exception {
+        InteractiveTypeEnum interactiveTypeEnum = InteractiveTypeEnum.getEnumByName(model.getInteractiveType());
+        if (!InteractiveTypeEnum.SERVER_WAIT_CLIENT.equals(interactiveTypeEnum)) {
+            return false;
+        }
 
-		ServerWaitModel serverWaitModel = model.getData().toJavaObject(ServerWaitModel.class);
-		clientAdapter.clientConnect(serverWaitModel);
+        ServerWaitModel serverWaitModel = model.getData().toJavaObject(ServerWaitModel.class);
+        clientAdapter.clientConnect(serverWaitModel);
 
-		return true;
-	}
+        return true;
+    }
 
 }

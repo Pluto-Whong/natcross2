@@ -10,7 +10,6 @@ import person.pluto.natcross2.serverside.listen.ListenServerControl;
 import person.pluto.natcross2.serverside.listen.ServerListenThread;
 
 /**
- * 
  * <p>
  * 请求建立控制器处理方法
  * </p>
@@ -20,32 +19,34 @@ import person.pluto.natcross2.serverside.listen.ServerListenThread;
  */
 public class ClientControlProcess implements IProcess {
 
-	public static final ClientControlProcess INSTANCE = new ClientControlProcess();
+    public static final ClientControlProcess INSTANCE = new ClientControlProcess();
 
-	@Override
-	public boolean wouldProc(InteractiveModel recvInteractiveModel) {
-		InteractiveTypeEnum interactiveTypeEnum = InteractiveTypeEnum
-				.getEnumByName(recvInteractiveModel.getInteractiveType());
-		return InteractiveTypeEnum.CLIENT_CONTROL.equals(interactiveTypeEnum);
-	}
+    @Override
+    public boolean wouldProc(InteractiveModel recvInteractiveModel) {
+        InteractiveTypeEnum interactiveTypeEnum = InteractiveTypeEnum.getEnumByName(
+                recvInteractiveModel.getInteractiveType());
+        return InteractiveTypeEnum.CLIENT_CONTROL.equals(interactiveTypeEnum);
+    }
 
-	@Override
-	public boolean processMothed(SocketChannel<? extends InteractiveModel, ? super InteractiveModel> socketChannel,
-			InteractiveModel recvInteractiveModel) throws Exception {
-		ClientControlModel clientControlModel = recvInteractiveModel.getData().toJavaObject(ClientControlModel.class);
-		ServerListenThread serverListenThread = ListenServerControl.get(clientControlModel.getListenPort());
+    @Override
+    public boolean processMethod(SocketChannel<? extends InteractiveModel, ? super InteractiveModel> socketChannel,
+            InteractiveModel recvInteractiveModel) throws Exception {
+        ClientControlModel clientControlModel = recvInteractiveModel.getData().toJavaObject(ClientControlModel.class);
+        ServerListenThread serverListenThread = ListenServerControl.get(clientControlModel.getListenPort());
 
-		if (serverListenThread == null) {
-			socketChannel.writeAndFlush(InteractiveModel.of(recvInteractiveModel.getInteractiveSeq(),
-					InteractiveTypeEnum.COMMON_REPLY, NatcrossResultEnum.NO_HAS_SERVER_LISTEN.toResultModel()));
-			return false;
-		}
+        if (serverListenThread == null) {
+            socketChannel.writeAndFlush(
+                    InteractiveModel.of(recvInteractiveModel.getInteractiveSeq(), InteractiveTypeEnum.COMMON_REPLY,
+                            NatcrossResultEnum.NO_HAS_SERVER_LISTEN.toResultModel()));
+            return false;
+        }
 
-		socketChannel.writeAndFlush(InteractiveModel.of(recvInteractiveModel.getInteractiveSeq(),
-				InteractiveTypeEnum.COMMON_REPLY, NatcrossResultModel.ofSuccess()));
+        socketChannel.writeAndFlush(
+                InteractiveModel.of(recvInteractiveModel.getInteractiveSeq(), InteractiveTypeEnum.COMMON_REPLY,
+                        NatcrossResultModel.ofSuccess()));
 
-		serverListenThread.setControlSocket(socketChannel.getSocket());
-		return true;
-	}
+        serverListenThread.setControlSocket(socketChannel.getSocket());
+        return true;
+    }
 
 }

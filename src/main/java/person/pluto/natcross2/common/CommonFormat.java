@@ -1,10 +1,12 @@
 package person.pluto.natcross2.common;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.RandomStringUtils;
+
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-
-import org.apache.commons.lang3.RandomStringUtils;
 
 /**
  * <p>
@@ -14,47 +16,42 @@ import org.apache.commons.lang3.RandomStringUtils;
  * @author Pluto
  * @since 2019-07-05 13:35:04
  */
-public class CommonFormat {
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class CommonFormat {
 
-	/**
-	 * 获取socket匹配对key
-	 *
-	 * @author Pluto
-	 * @since 2019-07-17 09:35:10
-	 * @param listenPort
-	 * @return
-	 */
-	public static String generateSocketPartKey(Integer listenPort) {
-		DecimalFormat fiveLenFormat = new DecimalFormat("00000");
-		String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
-		String randomNum = RandomStringUtils.randomNumeric(4);
-		return String.join("-", "SK", fiveLenFormat.format(listenPort), dateTime, randomNum);
-	}
+    /**
+     * 获取socket匹配对key
+     *
+     * @param listenPort
+     * @return
+     */
+    public static String generateSocketPartKey(Integer listenPort) {
+        DecimalFormat fiveLenFormat = new DecimalFormat("00000");
+        String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
+        String randomNum = RandomStringUtils.randomNumeric(4);
+        return String.join("-", "SK", fiveLenFormat.format(listenPort), dateTime, randomNum);
+    }
 
-	/**
-	 * 根据socketPartKey获取端口号
-	 *
-	 * @author Pluto
-	 * @since 2019-07-17 11:39:50
-	 * @param socketPartKey
-	 * @return
-	 */
-	public static Integer getSocketPortByPartKey(String socketPartKey) {
-		String[] split = socketPartKey.split("-");
-		return Integer.valueOf(split[1]);
-	}
+    /**
+     * 根据socketPartKey获取端口号
+     *
+     * @param socketPartKey
+     * @return
+     */
+    public static Integer getSocketPortByPartKey(String socketPartKey) {
+        String[] split = socketPartKey.split("-");
+        return Integer.valueOf(split[1]);
+    }
 
-	/**
-	 * 获取交互流水号
-	 *
-	 * @author Pluto
-	 * @since 2019-07-17 09:35:29
-	 * @return
-	 */
-	public static String generateInteractiveSeq() {
-		String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
-		String randomNum = RandomStringUtils.randomNumeric(4);
-		return String.join("-", "IS", dateTime, randomNum);
-	}
+    /**
+     * 获取交互流水号
+     *
+     * @return
+     */
+    public static String generateInteractiveSeq() {
+        String dateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
+        String randomNum = RandomStringUtils.randomNumeric(4);
+        return String.join("-", "IS", dateTime, randomNum);
+    }
 
 }

@@ -1,9 +1,5 @@
 package person.pluto.natcross2.clientside.config;
 
-import java.io.IOException;
-import java.net.Socket;
-import java.security.Key;
-
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import person.pluto.natcross2.channel.SecretInteractiveChannel;
@@ -11,8 +7,11 @@ import person.pluto.natcross2.channel.SocketChannel;
 import person.pluto.natcross2.model.InteractiveModel;
 import person.pluto.natcross2.utils.AESUtil;
 
+import java.io.IOException;
+import java.net.Socket;
+import java.security.Key;
+
 /**
- * 
  * <p>
  * 交互加密的配置方案（AES加密）
  * </p>
@@ -46,9 +45,7 @@ public class SecretInteractiveClientConfig extends InteractiveClientConfig {
 
     /**
      * 设置交互密钥
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:32:37
+     *
      * @param aesKey
      */
     public void setBaseAesKey(String aesKey) {

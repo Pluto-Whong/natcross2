@@ -64,18 +64,18 @@ public class NatcrossResultModel implements JSONAware {
     /**
      * 反射方式修改值
      *
-     * @author Pluto
-     * @since 2019-05-10 14:04:48
      * @param fieldStr
      * @param object
      * @return
+     * @author Pluto
+     * @since 2019-05-10 14:04:48
      */
     public NatcrossResultModel set(String fieldStr, Object object) {
-        Field field = null;
+        Field field;
         try {
             field = this.getClass().getDeclaredField(fieldStr);
         } catch (NoSuchFieldException | SecurityException e) {
-            log.warn("ResultModel get field faild!", e);
+            log.warn("ResultModel get field failed!", e);
             return this;
         }
 
@@ -83,7 +83,7 @@ public class NatcrossResultModel implements JSONAware {
         try {
             field.set(this, object);
         } catch (IllegalArgumentException | IllegalAccessException e) {
-            log.warn("ResultModel set field faild!", e);
+            log.warn("ResultModel set field failed!", e);
             return this;
         }
 

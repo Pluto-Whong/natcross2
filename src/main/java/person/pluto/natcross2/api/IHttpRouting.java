@@ -12,12 +12,12 @@ import person.pluto.natcross2.model.HttpRoute;
  */
 public interface IHttpRouting {
 
-	/**
-	 * 获取有效路由
-	 *
-	 * @param host
-	 * @return
-	 */
-	public HttpRoute pickEffectiveRoute(String host);
+    /**
+     * 获取有效路由
+     *
+     * @param host
+     * @return
+     */
+    HttpRoute pickEffectiveRoute(String host);
 
 }

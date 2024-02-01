@@ -1,7 +1,6 @@
 package person.pluto.natcross2.serverside.listen.clear;
 
 /**
- * 
  * <p>
  * 清理无效端口 线程
  * </p>
@@ -11,20 +10,14 @@ package person.pluto.natcross2.serverside.listen.clear;
  */
 public interface IClearInvalidSocketPartThread extends Runnable {
 
-	/**
-	 * 启动
-	 * 
-	 * @author Pluto
-	 * @since 2020-01-08 16:50:46
-	 */
-	void start();
+    /**
+     * 启动
+     */
+    void start();
 
-	/**
-	 * 退出
-	 * 
-	 * @author Pluto
-	 * @since 2020-01-08 16:50:51
-	 */
-	void cancel();
+    /**
+     * 退出
+     */
+    void cancel();
 
 }

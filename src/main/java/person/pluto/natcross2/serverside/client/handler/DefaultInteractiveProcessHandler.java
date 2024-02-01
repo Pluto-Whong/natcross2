@@ -4,7 +4,6 @@ import person.pluto.natcross2.serverside.client.process.ClientConnectProcess;
 import person.pluto.natcross2.serverside.client.process.ClientControlProcess;
 
 /**
- * 
  * <p>
  * 默认的接收处理handler
  * </p>
@@ -13,12 +12,12 @@ import person.pluto.natcross2.serverside.client.process.ClientControlProcess;
  * @since 2021-04-26 17:22:31
  */
 public class DefaultInteractiveProcessHandler extends InteractiveProcessHandler {
-	
-	public static final DefaultInteractiveProcessHandler INSTANCE = new DefaultInteractiveProcessHandler();
 
-	public DefaultInteractiveProcessHandler() {
-		this.addLast(ClientControlProcess.INSTANCE);
-		this.addLast(ClientConnectProcess.INSTANCE);
-	}
+    public static final DefaultInteractiveProcessHandler INSTANCE = new DefaultInteractiveProcessHandler();
+
+    public DefaultInteractiveProcessHandler() {
+        this.addLast(ClientControlProcess.INSTANCE);
+        this.addLast(ClientConnectProcess.INSTANCE);
+    }
 
 }

@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 
  * <p>
  * 请求建立控制器模型
  * </p>

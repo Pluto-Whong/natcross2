@@ -1,16 +1,6 @@
 package person.pluto.natcross2.serverside.listen.config;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.spi.SelectorProvider;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-
 import com.alibaba.fastjson.JSONObject;
-
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import person.pluto.natcross2.api.socketpart.AbsSocketPart;
@@ -26,6 +16,15 @@ import person.pluto.natcross2.serverside.listen.control.IControlSocket;
 import person.pluto.natcross2.serverside.listen.recv.ClientHeartHandler;
 import person.pluto.natcross2.serverside.listen.recv.CommonReplyHandler;
 import person.pluto.natcross2.serverside.listen.serversocket.ICreateServerSocket;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.spi.SelectorProvider;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * <p>
@@ -106,7 +105,7 @@ public class SimpleListenServerConfig implements IListenServerConfig {
 	@Override
 	public AbsSocketPart newSocketPart(ServerListenThread serverListenThread) {
 		SimpleSocketPart socketPart = new SimpleSocketPart(serverListenThread);
-		socketPart.setInvaildMillis(this.getInvaildMillis());
+		socketPart.setInvalidMillis(this.getInvaildMillis());
 		socketPart.setStreamCacheSize(this.getStreamCacheSize());
 		return socketPart;
 	}
