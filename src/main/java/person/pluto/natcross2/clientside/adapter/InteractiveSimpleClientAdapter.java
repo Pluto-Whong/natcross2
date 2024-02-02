@@ -190,6 +190,10 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
     @Override
     public void waitMessage() throws Exception {
         InteractiveModel read = this.socketChannel.read();
+
+        // 只要有有效信息推送过来，则重置心跳时间
+        this.resetServerHeartLastRecvTime();
+
         NatcrossExecutor.executeClientMessageProc(() -> this.procMethod(read));
     }
 
