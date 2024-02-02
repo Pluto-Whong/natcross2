@@ -110,6 +110,9 @@ public class InteractiveSimpleClientAdapter implements IClientAdapter<Interactiv
         if (StringUtils.equals(NatcrossResultEnum.SUCCESS.getCode(), javaObject.getRetCod())) {
             // 使用相同的
             this.socketChannel = socketChannel;
+
+            this.resetServerHeartLastRecvTime();
+
             return true;
         }
         return false;
