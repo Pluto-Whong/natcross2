@@ -2,6 +2,7 @@ package person.pluto.natcross2.clientside.config;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.channel.SecretInteractiveChannel;
 import person.pluto.natcross2.channel.SocketChannel;
 import person.pluto.natcross2.model.InteractiveModel;
@@ -19,6 +20,7 @@ import java.security.Key;
  * @author Pluto
  * @since 2020-01-08 16:32:18
  */
+@Slf4j
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class SecretInteractiveClientConfig extends InteractiveClientConfig {
@@ -38,7 +40,8 @@ public class SecretInteractiveClientConfig extends InteractiveClientConfig {
             Socket socket = new Socket(this.getClientServiceIp(), this.getClientServicePort());
             channel.setSocket(socket);
         } catch (IOException e) {
-            return null;
+            log.debug("connect client service exception", e);
+            throw new RuntimeException(e);
         }
         return channel;
     }

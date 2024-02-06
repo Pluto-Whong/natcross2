@@ -1,6 +1,7 @@
 package person.pluto.natcross2.clientside.config;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.api.socketpart.AbsSocketPart;
 import person.pluto.natcross2.api.socketpart.SimpleSocketPart;
 import person.pluto.natcross2.channel.InteractiveChannel;
@@ -30,6 +31,7 @@ import java.nio.charset.StandardCharsets;
  * @author Pluto
  * @since 2020-01-08 16:30:53
  */
+@Slf4j
 @Data
 public class InteractiveClientConfig implements IClientConfig<InteractiveModel, InteractiveModel> {
 
@@ -87,7 +89,8 @@ public class InteractiveClientConfig implements IClientConfig<InteractiveModel, 
 //			Socket socket = new Socket(this.getClientServiceIp(), this.getClientServicePort());
             interactiveChannel.setSocket(socket);
         } catch (IOException e) {
-            return null;
+            log.debug("connect client service exception", e);
+            throw new RuntimeException(e);
         }
 
         interactiveChannel.setCharset(this.charset);
