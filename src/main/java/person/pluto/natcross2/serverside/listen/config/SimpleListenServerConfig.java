@@ -3,6 +3,7 @@ package person.pluto.natcross2.serverside.listen.config;
 import com.alibaba.fastjson.JSONObject;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.api.socketpart.AbsSocketPart;
 import person.pluto.natcross2.api.socketpart.SimpleSocketPart;
 import person.pluto.natcross2.channel.InteractiveChannel;
@@ -34,80 +35,82 @@ import java.nio.charset.StandardCharsets;
  * @author Pluto
  * @since 2020-01-08 16:53:17
  */
+@Slf4j
 @Data
 @NoArgsConstructor
 public class SimpleListenServerConfig implements IListenServerConfig {
 
-	private Integer listenPort;
+    private Integer listenPort;
 
-	private Long invaildMillis = 60000L;
-	private Long clearInterval = 10L;
+    private Long invaildMillis = 60000L;
+    private Long clearInterval = 10L;
 
-	private Charset charset = StandardCharsets.UTF_8;
+    private Charset charset = StandardCharsets.UTF_8;
 
-	private ICreateServerSocket createServerSocket;
+    private ICreateServerSocket createServerSocket;
 
-	private int streamCacheSize = 8196;
+    private int streamCacheSize = 8196;
 
-	public SimpleListenServerConfig(Integer listenPort) {
-		this.listenPort = listenPort;
-	}
+    public SimpleListenServerConfig(Integer listenPort) {
+        this.listenPort = listenPort;
+    }
 
-	@Override
-	public ServerSocket createServerSocket() throws Exception {
-		if (this.createServerSocket == null) {
-			ServerSocketChannel openServerSocketChannel = SelectorProvider.provider().openServerSocketChannel();
-			openServerSocketChannel.bind(new InetSocketAddress(this.getListenPort()));
-			return openServerSocketChannel.socket();
+    @Override
+    public ServerSocket createServerSocket() throws Exception {
+        if (this.createServerSocket == null) {
+            ServerSocketChannel openServerSocketChannel = SelectorProvider.provider().openServerSocketChannel();
+            openServerSocketChannel.bind(new InetSocketAddress(this.getListenPort()));
+            return openServerSocketChannel.socket();
 //			return new ServerSocket(this.getListenPort());
-		} else {
-			return this.createServerSocket.createServerSocket(this.getListenPort());
-		}
-	}
+        } else {
+            return this.createServerSocket.createServerSocket(this.getListenPort());
+        }
+    }
 
-	/**
-	 * 创建controlSocket使用channel
-	 * 
-	 * @author Pluto
-	 * @since 2020-04-15 13:19:49
-	 * @param socket
-	 * @return
-	 */
-	protected SocketChannel<? extends InteractiveModel, ? super InteractiveModel> newControlSocketChannel(
-			Socket socket) {
-		InteractiveChannel interactiveChannel;
-		try {
-			interactiveChannel = new InteractiveChannel(socket);
-		} catch (IOException e) {
-			return null;
-		}
-		return interactiveChannel;
-	}
+    /**
+     * 创建controlSocket使用channel
+     *
+     * @param socket
+     * @return
+     * @author Pluto
+     * @since 2020-04-15 13:19:49
+     */
+    protected SocketChannel<? extends InteractiveModel, ? super InteractiveModel> newControlSocketChannel(
+            Socket socket) {
+        InteractiveChannel interactiveChannel;
+        try {
+            interactiveChannel = new InteractiveChannel(socket);
+        } catch (IOException e) {
+            log.error("newControlSocketChannel exception", e);
+            return null;
+        }
+        return interactiveChannel;
+    }
 
-	@Override
-	public IControlSocket newControlSocket(Socket socket, JSONObject config) {
-		SocketChannel<? extends InteractiveModel, ? super InteractiveModel> controlSocketChannel = this
-				.newControlSocketChannel(socket);
-		ControlSocket controlSocket = new ControlSocket(controlSocketChannel);
-		controlSocket.addRecvHandler(CommonReplyHandler.INSTANCE);
-		controlSocket.addRecvHandler(ClientHeartHandler.INSTANCE);
-		return controlSocket;
-	}
+    @Override
+    public IControlSocket newControlSocket(Socket socket, JSONObject config) {
+        SocketChannel<? extends InteractiveModel, ? super InteractiveModel> controlSocketChannel = this
+                .newControlSocketChannel(socket);
+        ControlSocket controlSocket = new ControlSocket(controlSocketChannel);
+        controlSocket.addRecvHandler(CommonReplyHandler.INSTANCE);
+        controlSocket.addRecvHandler(ClientHeartHandler.INSTANCE);
+        return controlSocket;
+    }
 
-	@Override
-	public IClearInvalidSocketPartThread newClearInvalidSocketPartThread(ServerListenThread serverListenThread) {
-		ClearInvalidSocketPartThread clearInvalidSocketPartThread = new ClearInvalidSocketPartThread(
-				serverListenThread);
-		clearInvalidSocketPartThread.setClearIntervalSeconds(this.getClearInterval());
-		return clearInvalidSocketPartThread;
-	}
+    @Override
+    public IClearInvalidSocketPartThread newClearInvalidSocketPartThread(ServerListenThread serverListenThread) {
+        ClearInvalidSocketPartThread clearInvalidSocketPartThread = new ClearInvalidSocketPartThread(
+                serverListenThread);
+        clearInvalidSocketPartThread.setClearIntervalSeconds(this.getClearInterval());
+        return clearInvalidSocketPartThread;
+    }
 
-	@Override
-	public AbsSocketPart newSocketPart(ServerListenThread serverListenThread) {
-		SimpleSocketPart socketPart = new SimpleSocketPart(serverListenThread);
-		socketPart.setInvalidMillis(this.getInvaildMillis());
-		socketPart.setStreamCacheSize(this.getStreamCacheSize());
-		return socketPart;
-	}
+    @Override
+    public AbsSocketPart newSocketPart(ServerListenThread serverListenThread) {
+        SimpleSocketPart socketPart = new SimpleSocketPart(serverListenThread);
+        socketPart.setInvalidMillis(this.getInvaildMillis());
+        socketPart.setStreamCacheSize(this.getStreamCacheSize());
+        return socketPart;
+    }
 
 }

@@ -3,6 +3,7 @@ package person.pluto.natcross2.serverside.listen.config;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.channel.SecretInteractiveChannel;
 import person.pluto.natcross2.channel.SocketChannel;
 import person.pluto.natcross2.model.InteractiveModel;
@@ -20,6 +21,7 @@ import java.security.Key;
  * @author Pluto
  * @since 2020-01-08 16:52:51
  */
+@Slf4j
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
@@ -42,6 +44,7 @@ public class SecretSimpleListenServerConfig extends SimpleListenServerConfig {
         try {
             channel.setSocket(socket);
         } catch (IOException e) {
+            log.error("newControlSocketChannel exception", e);
             return null;
         }
         return channel;

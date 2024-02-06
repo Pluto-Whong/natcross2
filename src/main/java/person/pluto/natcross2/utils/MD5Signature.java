@@ -2,6 +2,7 @@ package person.pluto.natcross2.utils;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -18,6 +19,7 @@ import java.util.Random;
  * @author Pluto
  * @since 2020-01-08 10:13:50
  */
+@Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class MD5Signature {
 
@@ -119,6 +121,7 @@ public final class MD5Signature {
         try {
             md = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException e) {
+            log.error("MessageDigest.getInstance exception", e);
             return null;
         }
         byte[] digest = md.digest(stringBuffer.toString().getBytes(charset));
