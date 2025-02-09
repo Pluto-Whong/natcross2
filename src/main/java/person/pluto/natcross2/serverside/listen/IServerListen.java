@@ -12,18 +12,18 @@ import person.pluto.natcross2.serverside.listen.control.IControlSocket;
  */
 public interface IServerListen {
 
-	/**
-	 * 格式化信息
-	 *
-	 * @return
-	 */
-	String formatInfo();
+    /**
+     * 格式化信息
+     *
+     * @return
+     */
+    String formatInfo();
 
-	/**
-	 * 控制端口通知关闭
-	 *
-	 * @param controlSocket
-	 */
-	void controlCloseNotice(IControlSocket controlSocket);
+    /**
+     * 控制端口通知关闭
+     *
+     * @param controlSocket
+     */
+    void controlCloseNotice(IControlSocket controlSocket);
 
 }

@@ -1,16 +1,15 @@
 package person.pluto.natcross2.serverside.listen.config;
 
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.nio.charset.Charset;
-
 import com.alibaba.fastjson.JSONObject;
-
 import person.pluto.natcross2.api.socketpart.AbsSocketPart;
 import person.pluto.natcross2.serverside.listen.ServerListenThread;
 import person.pluto.natcross2.serverside.listen.clear.IClearInvalidSocketPartThread;
 import person.pluto.natcross2.serverside.listen.control.IControlSocket;
-import person.pluto.natcross2.serverside.listen.control.MultControlSocket;
+import person.pluto.natcross2.serverside.listen.control.MultiControlSocket;
+
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.charset.Charset;
 
 /**
  * <p>
@@ -22,44 +21,44 @@ import person.pluto.natcross2.serverside.listen.control.MultControlSocket;
  */
 public class MultControlListenServerConfig implements IListenServerConfig {
 
-	protected final IListenServerConfig baseConfig;
+    protected final IListenServerConfig baseConfig;
 
-	protected final MultControlSocket multControlSocket = new MultControlSocket();
+    protected final MultiControlSocket multControlSocket = new MultiControlSocket();
 
-	public MultControlListenServerConfig(IListenServerConfig baseConfig) {
-		this.baseConfig = baseConfig;
-	}
+    public MultControlListenServerConfig(IListenServerConfig baseConfig) {
+        this.baseConfig = baseConfig;
+    }
 
-	@Override
-	public ServerSocket createServerSocket() throws Exception {
-		return this.baseConfig.createServerSocket();
-	}
+    @Override
+    public ServerSocket createServerSocket() throws Exception {
+        return this.baseConfig.createServerSocket();
+    }
 
-	@Override
-	public IControlSocket newControlSocket(Socket socket, JSONObject config) {
-		IControlSocket controlSocket = this.baseConfig.newControlSocket(socket, config);
-		multControlSocket.addControlSocket(controlSocket);
-		return multControlSocket;
-	}
+    @Override
+    public IControlSocket newControlSocket(Socket socket, JSONObject config) {
+        IControlSocket controlSocket = this.baseConfig.newControlSocket(socket, config);
+        multControlSocket.addControlSocket(controlSocket);
+        return multControlSocket;
+    }
 
-	@Override
-	public IClearInvalidSocketPartThread newClearInvalidSocketPartThread(ServerListenThread serverListenThread) {
-		return this.baseConfig.newClearInvalidSocketPartThread(serverListenThread);
-	}
+    @Override
+    public IClearInvalidSocketPartThread newClearInvalidSocketPartThread(ServerListenThread serverListenThread) {
+        return this.baseConfig.newClearInvalidSocketPartThread(serverListenThread);
+    }
 
-	@Override
-	public AbsSocketPart newSocketPart(ServerListenThread serverListenThread) {
-		return this.baseConfig.newSocketPart(serverListenThread);
-	}
+    @Override
+    public AbsSocketPart newSocketPart(ServerListenThread serverListenThread) {
+        return this.baseConfig.newSocketPart(serverListenThread);
+    }
 
-	@Override
-	public Integer getListenPort() {
-		return this.baseConfig.getListenPort();
-	}
+    @Override
+    public Integer getListenPort() {
+        return this.baseConfig.getListenPort();
+    }
 
-	@Override
-	public Charset getCharset() {
-		return this.baseConfig.getCharset();
-	}
+    @Override
+    public Charset getCharset() {
+        return this.baseConfig.getCharset();
+    }
 
 }

@@ -1,7 +1,5 @@
 package person.pluto.natcross2.clientside.config;
 
-import java.security.Key;
-
 import lombok.Getter;
 import lombok.Setter;
 import person.pluto.natcross2.api.secret.AESSecret;
@@ -10,8 +8,9 @@ import person.pluto.natcross2.api.socketpart.SecretSocketPart;
 import person.pluto.natcross2.clientside.ClientControlThread;
 import person.pluto.natcross2.utils.AESUtil;
 
+import java.security.Key;
+
 /**
- * 
  * <p>
  * 交互及隧道都加密
  * </p>
@@ -36,9 +35,7 @@ public class AllSecretInteractiveClientConfig extends SecretInteractiveClientCon
 
     /**
      * base64格式设置密钥
-     * 
-     * @author Pluto
-     * @since 2020-01-08 16:29:49
+     *
      * @param key
      */
     public void setBasePasswayKey(String key) {

@@ -1,13 +1,13 @@
 package person.pluto.natcross2.serverside.listen.recv;
 
-import java.util.Objects;
-
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import person.pluto.natcross2.channel.SocketChannel;
 import person.pluto.natcross2.model.InteractiveModel;
 import person.pluto.natcross2.model.enumeration.InteractiveTypeEnum;
+
+import java.util.Objects;
 
 /**
  * <p>
@@ -20,27 +20,27 @@ import person.pluto.natcross2.model.enumeration.InteractiveTypeEnum;
 @Slf4j
 public class CommonReplyHandler implements IRecvHandler<InteractiveModel, InteractiveModel> {
 
-	public static final CommonReplyHandler INSTANCE = new CommonReplyHandler();
+    public static final CommonReplyHandler INSTANCE = new CommonReplyHandler();
 
-	@Getter
-	@Setter
-	private IRecvHandler<InteractiveModel, InteractiveModel> handler;
+    @Getter
+    @Setter
+    private IRecvHandler<InteractiveModel, InteractiveModel> handler;
 
-	@Override
-	public boolean proc(InteractiveModel model,
-			SocketChannel<? extends InteractiveModel, ? super InteractiveModel> channel) throws Exception {
-		InteractiveTypeEnum interactiveTypeEnum = InteractiveTypeEnum.getEnumByName(model.getInteractiveType());
-		if (!InteractiveTypeEnum.COMMON_REPLY.equals(interactiveTypeEnum)) {
-			return false;
-		}
+    @Override
+    public boolean proc(InteractiveModel model,
+            SocketChannel<? extends InteractiveModel, ? super InteractiveModel> channel) throws Exception {
+        InteractiveTypeEnum interactiveTypeEnum = InteractiveTypeEnum.getEnumByName(model.getInteractiveType());
+        if (!InteractiveTypeEnum.COMMON_REPLY.equals(interactiveTypeEnum)) {
+            return false;
+        }
 
-		IRecvHandler<InteractiveModel, InteractiveModel> handler;
-		if (Objects.isNull(handler = this.handler)) {
-			log.info("common reply: {}", model);
-			return true;
-		}
+        IRecvHandler<InteractiveModel, InteractiveModel> handler;
+        if (Objects.isNull(handler = this.handler)) {
+            log.info("common reply: {}", model);
+            return true;
+        }
 
-		return handler.proc(model, channel);
-	}
+        return handler.proc(model, channel);
+    }
 
 }

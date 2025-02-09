@@ -3,7 +3,6 @@ package person.pluto.natcross2.serverside.client.adapter;
 import lombok.Getter;
 
 /**
- * 
  * <p>
  * 传值适配器的handler回复信息
  * </p>
@@ -25,10 +24,10 @@ public enum PassValueNextEnum {
     //
     ;
 
-    private boolean nextFlag;
-    private boolean closeFlag;
+    private final boolean nextFlag;
+    private final boolean closeFlag;
 
-    private PassValueNextEnum(boolean nextFlag, boolean closeFlag) {
+    PassValueNextEnum(boolean nextFlag, boolean closeFlag) {
         this.nextFlag = nextFlag;
         this.closeFlag = closeFlag;
     }

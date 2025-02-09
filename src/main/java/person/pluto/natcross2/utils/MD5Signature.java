@@ -1,5 +1,9 @@
 package person.pluto.natcross2.utils;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -8,7 +12,6 @@ import java.util.Arrays;
 import java.util.Random;
 
 /**
- * 
  * <p>
  * MD5散列签名
  * </p>
@@ -16,6 +19,8 @@ import java.util.Random;
  * @author Pluto
  * @since 2020-01-08 10:13:50
  */
+@Slf4j
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class MD5Signature {
 
     private static final Charset CHARSET = StandardCharsets.UTF_8;
@@ -34,13 +39,13 @@ public final class MD5Signature {
      * @since 2019-12-05 12:34:48
      */
     public static String toHexString(byte[] bytes) {
-        StringBuffer stringBuffer = new StringBuffer(bytes.length << 1);
+        StringBuilder stringBuilder = new StringBuilder(bytes.length << 1);
 
         for (byte tmp : bytes) {
-            stringBuffer.append(HEXBASE.charAt(tmp >> 4 & 0xf));
-            stringBuffer.append(HEXBASE.charAt(tmp & 0xf));
+            stringBuilder.append(HEXBASE.charAt(tmp >> 4 & 0xf));
+            stringBuilder.append(HEXBASE.charAt(tmp & 0xf));
         }
-        return stringBuffer.toString();
+        return stringBuilder.toString();
     }
 
     /**
@@ -52,7 +57,7 @@ public final class MD5Signature {
      * @since 2019-12-05 11:20:35
      */
     public static String getRandomStr(int count) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < count; ++i) {
             sb.append(RANDOMBASE.charAt(RANDOM.nextInt(RANDOMBASE.length())));
         }
@@ -68,8 +73,8 @@ public final class MD5Signature {
      * @since 2019-12-05 11:20:53
      */
     public static byte[] intToBytes(int source) {
-        return new byte[] { (byte) ((source >> 24) & 0xFF), (byte) ((source >> 16) & 0xFF),
-                (byte) ((source >> 8) & 0xFF), (byte) (source & 0xFF) };
+        return new byte[]{(byte) ((source >> 24) & 0xFF), (byte) ((source >> 16) & 0xFF), (byte) ((source >> 8) & 0xFF),
+                (byte) (source & 0xFF)};
     }
 
     /**
@@ -106,7 +111,7 @@ public final class MD5Signature {
      */
     public static String getSignature(Charset charset, String... params) {
         Arrays.sort(params);
-        StringBuffer stringBuffer = new StringBuffer();
+        StringBuilder stringBuffer = new StringBuilder();
 
         for (int i = 0; i < 4; ++i) {
             stringBuffer.append(params[i]);
@@ -116,6 +121,7 @@ public final class MD5Signature {
         try {
             md = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException e) {
+            log.error("MessageDigest.getInstance exception", e);
             return null;
         }
         byte[] digest = md.digest(stringBuffer.toString().getBytes(charset));
